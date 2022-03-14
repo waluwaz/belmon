@@ -751,7 +751,10 @@ Get_Modem_Stats(){
 	timenow="$(date '+%s')"
 	timenowfriendly="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
-	
+	shstatsfile_curl="/tmp/shstats_curl.csv"
+	shstatsfile_dst="/tmp/shstats_dst.csv"
+	shstatsfile_ust="/tmp/shstats_ust.csv"
+
 # The original version tracks 6 metrics. 
 # Every metrics gets a dedicated SQL table
 # Each table has the same structure
@@ -766,8 +769,8 @@ Get_Modem_Stats(){
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 # It appears that those very metric's name are expected by other parts of the solution:
 # for instance: SELECT [Timestamp] FROM modstats_RxPwr
-# As a start, I will keep them
-# The 6 metrics could be mapped to 
+# As a start, I will keep those metric name, even though they might store values with different meanings
+# The 6 metrics could be mapped as follows (Jack(s metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
 # TxT3Out        "ChannelID": "10",
 # TxT4Out        "Frequency": "522 MHz",
 # RxPwr & TxPwr:        "PowerLevel": "-4.8 dBmV",
@@ -800,15 +803,15 @@ Get_Modem_Stats(){
 #	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 
 
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" > "$shstatsfile"
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" > "$shstatsfile_curl"
 
 # !!!! assuming one is just processing the Rx. Just use jq
- | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile_dst"
 # Note that the filtering above with grep, that ensures that only target measures stay in the file will not work, as for the VOO modem, all lines will start with letters (no SNMP OIDs). But this is no big deal as the metric names will still be unique, so the filtering will happen effictively later
 
+cat "$shstatsfile_curl" | jq '.data.USTbl' > "$shstatsfile_ust" | sed s/PowerLevel/TxPwr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile_ust"
 
-# !!!! assuming one is then processing the Tx. Just use jq
-	 | sed s/PowerLevel/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+cat "$shstatsfile_dst" "$shstatsfile_ust" > "$shstatsfile"
 
 
 # If the file is not empty, it is processed, each of the 6 metric in turn	
