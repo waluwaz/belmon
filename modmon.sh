@@ -436,13 +436,20 @@ Auto_Startup(){
 	esac
 }
 
+
+# The original modmon of JackYaz monitored the modem every 30 minutes. 
+# Note how the scheduling targetted minute 15 and 46, while spdMerlin targetted 12 and 42, so avoiding overlap.
+# For the CGA4233 of VOO, the session timeout of the WEBUI closes the connection after 5 minutes.
+# As I don't know how to reauthenticate, I hammer the modem every 3 minutes or so to ensure that the session stays open.
+# See cru statement below, starting with */3 for the settings applyed to the minutes 
+# Additionnally, at my adress, I had fast power changes, hence the desirability for frequent updates, much more frequent tha every 30 minutes.
 Auto_Cron(){
 	case $1 in
 		create)
 			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
 			
 			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
-				cru a "$SCRIPT_NAME" "16,46 * * * * /jffs/scripts/$SCRIPT_NAME generate"
+				cru a "$SCRIPT_NAME" "*/3 * * * * /jffs/scripts/$SCRIPT_NAME generate"
 			fi
 		;;
 		delete)
@@ -745,25 +752,63 @@ Get_Modem_Stats(){
 	timenowfriendly="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
 	
+# The original version tracks 6 metrics. 
+# Every metrics gets a dedicated SQL table
+# Each table has the same structure
+# Metrics are processed one at a time: a file is created with all INSERT SQL statements for that metric (/tmp/modmon-stats.sql). 
+# When the file for one metric is ready, it is executed as SQL to actually populate the relevant table.
+# Subsequently, the same table is "purged" from old records, based on the retention period
+# Finally, the text file with the INSERT statements is deleted
+
+
+
+
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+# It appears that those very metric's name are expected by other parts of the solution:
+# for instance: SELECT [Timestamp] FROM modstats_RxPwr
+# As a start, I will keep them
+# The 6 metrics could be mapped to 
+# TxT3Out        "ChannelID": "10",
+# TxT4Out        "Frequency": "522 MHz",
+# RxPwr & TxPwr:        "PowerLevel": "-4.8 dBmV",
+# RxSnr			        "SNRLevel": "38.3 dB",
+#        				"Modulation": "256-QAM",
+#        				"Octets": "772717700",
+#				        "Correcteds": "248675",
+# RxPstRs		        "Uncorrectables": "9629",
+#        "LockStatus": "Locked",
+#        "ChannelType": "SC-QAM"
 	
 	echo 'var modmonstatus = "InProgress";' > /tmp/detect_modmon.js
 	
 	Process_Upgrade
-	
+
+# See https://www.gnu.org/software/sed/manual/html_node/The-_0022s_0022-Command.html
+# The original target modem produces a file with one value per line
+# The values in the file are identified by numbers, as per the concept of OIDs in SNMP (https://www.dpstele.com/snmp/what-does-oid-network-elements.php)
+# The code here replaces the OID numbers by the name of the metrics (among the 6 defined above, plus some which are not used any further)
+# It then only keeps the lines that start with letters, i.e. the ones that have received a metric name (with letters) instead of the SNMP OID (with digits).
+# The processing also does additional processing to globally prepare the text 
+# Ultimately, this produces a file, $shstatsfile
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
-	
+
+# If the file is not empty, it is processed, each of the 6 metric in turn	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
-			channelcount="$(grep -c "$metric" $shstatsfile)"
+			channelcount="$(grep -c "$metric" $shstatsfile)"    # one counts the number of lines for the current metric
 			
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
 				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
+				# This is not very suitable for my case where the modem reports values for a varying set of 16 channels; 
+				# among a total of 20 physical channels (from 1 to 22, not including 17 and 18)
+				# For the VOO modem, a vector with the applicable channel numbers/IDs should be first prepared,
+				# in order to subsequently feed the database with the applicable channel number/ID
 				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$counter,$measurement);" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
