@@ -784,13 +784,32 @@ Get_Modem_Stats(){
 	Process_Upgrade
 
 # See https://www.gnu.org/software/sed/manual/html_node/The-_0022s_0022-Command.html
-# The original target modem produces a file with one value per line
+# The original target modem produces a file with one value per line, like
+#	"1.3.6.1.2.1.10.127.1.1.4.1.3.2":"1791416",
 # The values in the file are identified by numbers, as per the concept of OIDs in SNMP (https://www.dpstele.com/snmp/what-does-oid-network-elements.php)
-# The code here replaces the OID numbers by the name of the metrics (among the 6 defined above, plus some which are not used any further)
+# The code below replaces the OID numbers by the name of the metrics (among the 6 defined above, plus some more which are not used any further)
 # It then only keeps the lines that start with letters, i.e. the ones that have received a metric name (with letters) instead of the SNMP OID (with digits).
 # The processing also does additional processing to globally prepare the text 
 # Ultimately, this produces a file, $shstatsfile
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+#
+# Note that the lines from my modem exhibit a few differences (on top of being one long line being structured as json, but this can be solved by jq )
+# Note the leading "blanks", note the blank after the colonn, note the minus sign, the decimal part and the unit.
+# Jacks's solution must also deal with decimal parts for power level, so the code must be OK with it. 
+# I guess the code that can deal with decimals can deal with negative figures.
+#         "PowerLevel": "-4.6 dBmV",
+#	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+
+
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" > "$shstatsfile"
+
+# !!!! assuming one is just processing the Rx. Just use jq
+ | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+# Note that the filtering above with grep, that ensures that only target measures stay in the file will not work, as for the VOO modem, all lines will start with letters (no SNMP OIDs). But this is no big deal as the metric names will still be unique, so the filtering will happen effictively later
+
+
+# !!!! assuming one is then processing the Tx. Just use jq
+	 | sed s/PowerLevel/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+
 
 # If the file is not empty, it is processed, each of the 6 metric in turn	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
@@ -803,12 +822,16 @@ Get_Modem_Stats(){
 			
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
+				# grep limits the processing to only the target metric
+				# sed takes the Nth value
+				# cut takes the third value, based on comma as a delimiter
 				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
 				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
 				# This is not very suitable for my case where the modem reports values for a varying set of 16 channels; 
 				# among a total of 20 physical channels (from 1 to 22, not including 17 and 18)
 				# For the VOO modem, a vector with the applicable channel numbers/IDs should be first prepared,
-				# in order to subsequently feed the database with the applicable channel number/ID
+				# in order to subsequently feed the database with the applicable channel number/ID.
+				# Note that, as a first step, sticking values in pseudo channels 1 to 16 would be good enough
 				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$counter,$measurement);" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
