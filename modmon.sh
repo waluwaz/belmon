@@ -436,13 +436,20 @@ Auto_Startup(){
 	esac
 }
 
+
+# The original modmon of JackYaz monitored the modem every 30 minutes. 
+# Note how the scheduling targetted minute 15 and 46, while spdMerlin targetted 12 and 42, so avoiding overlap.
+# For the CGA4233 of VOO, the session timeout of the WEBUI closes the connection after 5 minutes.
+# As I don't know how to reauthenticate, I hammer the modem every 3 minutes or so to ensure that the session stays open.
+# See cru statement below, starting with */3 for the settings applyed to the minutes 
+# Additionnally, at my adress, I had fast power changes, hence the desirability for frequent updates, much more frequent tha every 30 minutes.
 Auto_Cron(){
 	case $1 in
 		create)
 			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
 			
 			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
-				cru a "$SCRIPT_NAME" "16,46 * * * * /jffs/scripts/$SCRIPT_NAME generate"
+				cru a "$SCRIPT_NAME" "*/3 * * * * /jffs/scripts/$SCRIPT_NAME generate"
 			fi
 		;;
 		delete)
@@ -716,6 +723,10 @@ WriteSql_ToFile(){
 		dividefactor=10
 	fi
 	
+
+	# For the VOO modem, no sign that a dividefactor would be necessary
+	dividefactor=1
+
 	echo "SELECT ('Ch. ' || [ChannelNum]) Channel,Min([Timestamp]) Time,IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY Channel,([Timestamp]/($multiplier)) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;" >> "$7"
 }
 
@@ -744,27 +755,111 @@ Get_Modem_Stats(){
 	timenow="$(date '+%s')"
 	timenowfriendly="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
-	
+
+	# additional temp files used to generate the $shstatsfile as expected by the rest of the code
+	shstatsfile_curl="/tmp/shstats_curl.csv"
+	shstatsfile_dst="/tmp/shstats_dst.csv"
+	shstatsfile_ust="/tmp/shstats_ust.csv"
+
+# The original version tracks 6 metrics. 
+# Every metrics gets a dedicated SQL table
+# Each table has the same structure
+# Metrics are processed one at a time: a file is created with all INSERT SQL statements for that metric (/tmp/modmon-stats.sql). 
+# When the file for one metric is ready, it is executed as SQL to actually populate the relevant table.
+# Subsequently, the same table is "purged" from old records, based on the retention period
+# Finally, the text file with the INSERT statements is deleted
+
+
+
+
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+# It appears that those very metric's name are expected by other parts of the solution:
+# for instance: SELECT [Timestamp] FROM modstats_RxPwr
+# As a start, I will keep those metric name, even though they might store values with different meanings
+# The 6 metrics could be mapped as follows (Jack(s metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
+# 				"ChannelID": "10",
+# TxT4Out       "Frequency": "522 MHz",
+# RxPwr & TxPwr OK:        "PowerLevel": "-4.8 dBmV",
+# RxSnr			        "SNRLevel": "38.3 dB",
+#        				"Modulation": "256-QAM",
+#        				"Octets": "772717700",
+# TxT3Out		        "Correcteds": "248675",
+# RxPstRs		        "Uncorrectables": "9629",
+#        "LockStatus": "Locked",
+#        "ChannelType": "SC-QAM"
 	
 	echo 'var modmonstatus = "InProgress";' > /tmp/detect_modmon.js
 	
 	Process_Upgrade
-	
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
-	
+
+# See https://www.gnu.org/software/sed/manual/html_node/The-_0022s_0022-Command.html
+# The original target modem produces a file with one value per line, like
+#	"1.3.6.1.2.1.10.127.1.1.4.1.3.2":"1791416",
+# The values in the file are identified by numbers, as per the concept of OIDs in SNMP (https://www.dpstele.com/snmp/what-does-oid-network-elements.php)
+# The code below replaces the OID numbers by the name of the metrics (among the 6 defined above, plus some more which are not used any further)
+# It then only keeps the lines that start with letters, i.e. the ones that have received a metric name (with letters) instead of the SNMP OID (with digits).
+# The processing also does additional processing to globally prepare the text 
+# Ultimately, this produces a file, $shstatsfile
+#
+# Note that the lines from my modem exhibit a few differences (on top of being one long line being structured as json, but this can be solved by jq )
+# Note the leading "blanks", note the blank after the colonn, note the minus sign, the decimal part and the unit.
+# Jacks's solution must also deal with decimal parts for power level, so the code must be OK with it. 
+# I guess the code that can deal with decimals can deal with negative figures.
+#         "PowerLevel": "-4.6 dBmV",
+#	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+
+# curl 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl?_=1647373319922' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate' -H 'X-CSRF-TOKEN: 2d39f236c2776485efc99f15d411b5f5' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Referer: http://192.168.100.1/' -H 'Cookie: lang=fr; PHPSESSID=42degahqbb8u5kikpbfiid5s6n; auth=2d39f236c2776485efc99f15d411b5f5' -H 'DNT: 1' -H 'Sec-GPC: 1' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache'
+
+
+
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
+
+# Processing the TX, UpStream
+cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/PowerLevel/TxPwr/ | sed s/ChannelID/TxChannelID/ | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"
+
+# Processing the Rx, DownStream
+cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/RxChannelID/ | sed s/Correcteds/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed s/__id/01Discard/  | sed s/Frequency/02Discard/ | sed s/Modulation/03Discard/ | sed s/Octets/04Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
+# Note that the filtering above with grep, that ensures that only target measures stay in the file will work 
+# because I artificially renamed lines with 0x prefix and the Discard keyword
+
+
+# testing: See documentation subtree, with 05_test_script_to_prepare_data.sh
+
+# https://www.cyberciti.biz/tips/delete-leading-spaces-from-front-of-each-word.html
+cat "$shstatsfile_ust" "$shstatsfile_dst" | sed 's/MHz//' | sed 's/dBmV//' | sed 's/dB//' | sed 's/"//g' | sed 's/:/,,/' | sed 's/ //g' | grep "^[A-Za-z]"  > "$shstatsfile"
+
+rm -f "$shstatsfile_curl"
+rm -f "$shstatsfile_dst"
+rm -f "$shstatsfile_ust"
+
+# If the file is not empty, it is processed, each of the 6 metric in turn	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
-			channelcount="$(grep -c "$metric" $shstatsfile)"
+			channelcount="$(grep -c "$metric" $shstatsfile)"    # one counts the number of lines for the current metric
 			
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
-				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
-				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$counter,$measurement);" >> /tmp/modmon-stats.sql
+				# grep limits the processing to only the target metric
+				# sed takes the Nth value
+				# cut takes the third value, based on comma as a delimiter
+									   measurement="$(grep "$metric"   $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				# For DownStream/Rx, the channels are in a varying order, with some absent channels, so the counter is not equal to the channel
+				    					   channel="$(grep RxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				# same logic for TX 
+				if [ $metric = TxPwr ]; then channel="$(grep TxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				fi
+
+				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
+				# This is not very suitable for my case where the modem reports values for a varying set of 16 channels; 
+				# among a total of 20 physical channels (from 1 to 22, not including 17 and 18)
+				# For the VOO modem, a vector with the applicable channel numbers/IDs should be first prepared,
+				# in order to subsequently feed the database with the applicable channel number/ID.
+				# Note that, as a first step, sticking values in pseudo channels 1 to 16 would be good enough
+				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$channel,$measurement);" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
@@ -821,7 +916,10 @@ Generate_CSVs(){
 		if echo "$metric" | grep -qF "TxPwr" && [ "$(FixTxPwr "check")" = "true" ]; then
 			dividefactor=10
 		fi
-		
+
+		# For the VOO modem, no sign that a dividefactor would be necessary
+		dividefactor=1
+
 		{
 			echo ".mode csv"
 			echo ".headers on"
