@@ -723,6 +723,10 @@ WriteSql_ToFile(){
 		dividefactor=10
 	fi
 	
+
+	# For the VOO modem, no sign that a dividefactor would be necessary
+	dividefactor=1
+
 	echo "SELECT ('Ch. ' || [ChannelNum]) Channel,Min([Timestamp]) Time,IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY Channel,([Timestamp]/($multiplier)) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;" >> "$7"
 }
 
@@ -775,7 +779,7 @@ Get_Modem_Stats(){
 # The 6 metrics could be mapped as follows (Jack(s metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
 # 				"ChannelID": "10",
 # TxT4Out       "Frequency": "522 MHz",
-# RxPwr & TxPwr:        "PowerLevel": "-4.8 dBmV",
+# RxPwr & TxPwr OK:        "PowerLevel": "-4.8 dBmV",
 # RxSnr			        "SNRLevel": "38.3 dB",
 #        				"Modulation": "256-QAM",
 #        				"Octets": "772717700",
@@ -808,7 +812,7 @@ Get_Modem_Stats(){
 
 
 
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 2d39f236c2776485efc99f15d411b5f5' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=42degahqbb8u5kikpbfiid5s6n; auth=2d39f236c2776485efc99f15d411b5f5'  > "$shstatsfile_curl"
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
 
 # Processing the TX, UpStream
 cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/PowerLevel/TxPwr/ | sed s/ChannelID/TxChannelID/ | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"
@@ -842,11 +846,11 @@ rm -f "$shstatsfile_ust"
 				# grep limits the processing to only the target metric
 				# sed takes the Nth value
 				# cut takes the third value, based on comma as a delimiter
-										measurement="$(grep "$metric"   $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+									   measurement="$(grep "$metric"   $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
 				# For DownStream/Rx, the channels are in a varying order, with some absent channels, so the counter is not equal to the channel
-				    					    channel="$(grep RxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				    					   channel="$(grep RxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
 				# same logic for TX 
-				if [$metric="TxPwr"]; then channel="$(grep TxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				if [ $metric = TxPwr ]; then channel="$(grep TxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
 				fi
 
 				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
@@ -912,7 +916,10 @@ Generate_CSVs(){
 		if echo "$metric" | grep -qF "TxPwr" && [ "$(FixTxPwr "check")" = "true" ]; then
 			dividefactor=10
 		fi
-		
+
+		# For the VOO modem, no sign that a dividefactor would be necessary
+		dividefactor=1
+
 		{
 			echo ".mode csv"
 			echo ".headers on"
