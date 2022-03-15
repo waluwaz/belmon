@@ -751,6 +751,8 @@ Get_Modem_Stats(){
 	timenow="$(date '+%s')"
 	timenowfriendly="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
+
+	# additional temp files used to generate the $shstatsfile as expected by the rest of the code
 	shstatsfile_curl="/tmp/shstats_curl.csv"
 	shstatsfile_dst="/tmp/shstats_dst.csv"
 	shstatsfile_ust="/tmp/shstats_ust.csv"
@@ -771,13 +773,13 @@ Get_Modem_Stats(){
 # for instance: SELECT [Timestamp] FROM modstats_RxPwr
 # As a start, I will keep those metric name, even though they might store values with different meanings
 # The 6 metrics could be mapped as follows (Jack(s metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
-# TxT3Out        "ChannelID": "10",
-# TxT4Out        "Frequency": "522 MHz",
+# 				"ChannelID": "10",
+# TxT4Out       "Frequency": "522 MHz",
 # RxPwr & TxPwr:        "PowerLevel": "-4.8 dBmV",
 # RxSnr			        "SNRLevel": "38.3 dB",
 #        				"Modulation": "256-QAM",
 #        				"Octets": "772717700",
-#				        "Correcteds": "248675",
+# TxT3Out		        "Correcteds": "248675",
 # RxPstRs		        "Uncorrectables": "9629",
 #        "LockStatus": "Locked",
 #        "ChannelType": "SC-QAM"
@@ -802,22 +804,22 @@ Get_Modem_Stats(){
 #         "PowerLevel": "-4.6 dBmV",
 #	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 
+# curl 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl?_=1647373319922' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate' -H 'X-CSRF-TOKEN: 2d39f236c2776485efc99f15d411b5f5' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Referer: http://192.168.100.1/' -H 'Cookie: lang=fr; PHPSESSID=42degahqbb8u5kikpbfiid5s6n; auth=2d39f236c2776485efc99f15d411b5f5' -H 'DNT: 1' -H 'Sec-GPC: 1' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache'
 
 
 
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 8540964d05dd11960218290da2f77b29' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=l3ljblkpfhf5k6vgh7vuhsfngn; auth=8540964d05dd11960218290da2f77b29'  > "$shstatsfile_curl"
-
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 2d39f236c2776485efc99f15d411b5f5' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=42degahqbb8u5kikpbfiid5s6n; auth=2d39f236c2776485efc99f15d411b5f5'  > "$shstatsfile_curl"
 
 # Processing the TX, UpStream
 cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/PowerLevel/TxPwr/ | sed s/ChannelID/TxChannelID/ | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"
 
 # Processing the Rx, DownStream
-cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/RxChannelID/ | sed s/Correcteds/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/  sed s/__id/01Discard/  | sed s/Frequency/02Discard/ | sed s/Modulation/03Discard/ | sed s/Octets/04Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
-# Note that the filtering above with grep, that ensures that only target measures stay in the file will not work, as for the VOO modem, all lines will start with letters (no SNMP OIDs). But this is no big deal as the metric names will still be unique, so the filtering will happen effictively later
+cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/RxChannelID/ | sed s/Correcteds/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed s/__id/01Discard/  | sed s/Frequency/02Discard/ | sed s/Modulation/03Discard/ | sed s/Octets/04Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
+# Note that the filtering above with grep, that ensures that only target measures stay in the file will work 
+# because I artificially renamed lines with 0x prefix and the Discard keyword
 
 
-# testing  
-# cat 03_json_raw.json | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/TxChannelID/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/MHz//' | sed 's/dBmV//' | sed 's/dB//'  | sed 's/"//g' | sed 's/:/,,/' | sed 's/ //g' | grep "^[A-Za-z]" > ./05_prepared_data_sample
+# testing: See documentation subtree, with 05_test_script_to_prepare_data.sh
 
 # https://www.cyberciti.biz/tips/delete-leading-spaces-from-front-of-each-word.html
 cat "$shstatsfile_ust" "$shstatsfile_dst" | sed 's/MHz//' | sed 's/dBmV//' | sed 's/dB//' | sed 's/"//g' | sed 's/:/,,/' | sed 's/ //g' | grep "^[A-Za-z]"  > "$shstatsfile"
@@ -840,10 +842,12 @@ rm -f "$shstatsfile_ust"
 				# grep limits the processing to only the target metric
 				# sed takes the Nth value
 				# cut takes the third value, based on comma as a delimiter
-				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+										measurement="$(grep "$metric"   $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
 				# For DownStream/Rx, the channels are in a varying order, with some absent channels, so the counter is not equal to the channel
-				channel="$(grep "RxChannelID" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
-				if $metric=TxPwr then channel="$(grep "TxChannelID" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				    					    channel="$(grep RxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				# same logic for TX 
+				if [$metric="TxPwr"]; then channel="$(grep TxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				fi
 
 				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
 				# This is not very suitable for my case where the modem reports values for a varying set of 16 channels; 

@@ -813,7 +813,7 @@ function UpdateStats(){
 	showhide('btnUpdateStats',false);
 	document.formScriptActions.action_script.value = 'start_modmon';
 	document.formScriptActions.submit();
-	document.getElementById('modupdate_text').innerHTML = 'Retrieving Hub 3 stats';
+	document.getElementById('modupdate_text').innerHTML = 'Retrieving VOO Technicolor stats';
 	showhide('imgModUpdate',true);
 	showhide('modupdate_text',true);
 	setTimeout(update_modtest,5000);
