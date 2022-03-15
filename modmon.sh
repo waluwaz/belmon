@@ -803,16 +803,28 @@ Get_Modem_Stats(){
 #	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 
 
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" > "$shstatsfile_curl"
 
-# !!!! assuming one is just processing the Rx. Just use jq
-cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile_dst"
+
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 8540964d05dd11960218290da2f77b29' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=l3ljblkpfhf5k6vgh7vuhsfngn; auth=8540964d05dd11960218290da2f77b29'  > "$shstatsfile_curl"
+
+
+# Processing the TX, UpStream
+cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/PowerLevel/TxPwr/ | sed s/ChannelID/TxChannelID/ | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"
+
+# Processing the Rx, DownStream
+cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/RxChannelID/ | sed s/Correcteds/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/  sed s/__id/01Discard/  | sed s/Frequency/02Discard/ | sed s/Modulation/03Discard/ | sed s/Octets/04Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
 # Note that the filtering above with grep, that ensures that only target measures stay in the file will not work, as for the VOO modem, all lines will start with letters (no SNMP OIDs). But this is no big deal as the metric names will still be unique, so the filtering will happen effictively later
 
-cat "$shstatsfile_curl" | jq '.data.USTbl' > "$shstatsfile_ust" | sed s/PowerLevel/TxPwr/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile_ust"
 
-cat "$shstatsfile_dst" "$shstatsfile_ust" > "$shstatsfile"
+# testing  
+# cat 03_json_raw.json | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/TxChannelID/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed 's/MHz//' | sed 's/dBmV//' | sed 's/dB//'  | sed 's/"//g' | sed 's/:/,,/' | sed 's/ //g' | grep "^[A-Za-z]" > ./05_prepared_data_sample
 
+# https://www.cyberciti.biz/tips/delete-leading-spaces-from-front-of-each-word.html
+cat "$shstatsfile_ust" "$shstatsfile_dst" | sed 's/MHz//' | sed 's/dBmV//' | sed 's/dB//' | sed 's/"//g' | sed 's/:/,,/' | sed 's/ //g' | grep "^[A-Za-z]"  > "$shstatsfile"
+
+rm -f "$shstatsfile_curl"
+rm -f "$shstatsfile_dst"
+rm -f "$shstatsfile_ust"
 
 # If the file is not empty, it is processed, each of the 6 metric in turn	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
@@ -829,13 +841,17 @@ cat "$shstatsfile_dst" "$shstatsfile_ust" > "$shstatsfile"
 				# sed takes the Nth value
 				# cut takes the third value, based on comma as a delimiter
 				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				# For DownStream/Rx, the channels are in a varying order, with some absent channels, so the counter is not equal to the channel
+				channel="$(grep "RxChannelID" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				if $metric=TxPwr then channel="$(grep "TxChannelID" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+
 				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
 				# This is not very suitable for my case where the modem reports values for a varying set of 16 channels; 
 				# among a total of 20 physical channels (from 1 to 22, not including 17 and 18)
 				# For the VOO modem, a vector with the applicable channel numbers/IDs should be first prepared,
 				# in order to subsequently feed the database with the applicable channel number/ID.
 				# Note that, as a first step, sticking values in pseudo channels 1 to 16 would be good enough
-				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$counter,$measurement);" >> /tmp/modmon-stats.sql
+				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$channel,$measurement);" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
