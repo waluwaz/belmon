@@ -20,7 +20,8 @@ You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asu
 ## Installation
 Install the original modmon from JackYaz in version 1.1.8. See his instructions.
 Replace the modmon file in /jffs/scripts with the modmon from my repo. ! The name in the router must be modmon, not modmon.sh.
-The modmon file on the browser must be executable (chmod a+x).
+(NB: In the future, I might customize other files which would also need to be copied to the router. The commit dates might give you a clue.)
+The modmon file on the router must be executable (chmod a+x).
 I guess my Master branch is your best bet.
 
 Alternatively, if you are feeling lucky, you could try the following, untested approach to install:
@@ -54,3 +55,5 @@ See Jack's repo for the flavour of the UI.
 ## Help
 You can post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/?prefix_id=21)
 but I don't get there often, and I probably won't be available to help.
+
+I guess you already understood, this is not a well-rounded solution for a large audience. This is proof that it could work for me; and if your setup is similar; and you have a similar skillset, you will probably be able to get there with less effort than I did originally. Use it if you like, if you are interested in experimenting, not if you need a reliable solution.
