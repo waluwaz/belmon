@@ -2,12 +2,12 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 ![Shellcheck](https://github.com/jackyaz/modmon/actions/workflows/shellcheck.yml/badge.svg)
 
-## v1.1.8
-### Updated on 2021-08-05
+## v0.1.0-alpha
+### Updated on 2022-03-16
 ## About
-modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. It was created by JackYaz. This repository has a derivative work based on modmon and customized to work with another modem, the Technicolor CGA4233 from VOO in Belgium. It doesn't have a specific name, because I'm not sure how to change the name without breaking it; also because it probably couldn't coexist with the original modmon, and finally because I can't imagine a scenario where one would need the original modmon and my hack.
+modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. It was created by JackYaz. This repository has a derivative work based on modmon and customized to work with another modem, the Technicolor CGA4233 from VOO in Belgium. It doesn't have a specific name, because I'm not sure how to change the name without breaking it; also because it probably couldn't coexist with the original modmon, and finally because I can't imagine a scenario where someone would concurrently need the original modmon and my hack.
 
-My hack tries to support the Technicolor CGA4233 from VOO in Belgium. Compared to the version of Jack, it hammers the modem every 3 minutes (in order to keep the session alive). It needs you to update the curl command around line 815 of modmon.sh, and paste the tokens for PHP session and authentication (also in CSRF). I got them with F12 (Developer tools)/Network/Reload/Copy as curl. And you need to either start modmon fast, or keep the session alive until it starts. You have 5 minutes at most... I usually have a  ssh session active, I open the router file with vi, and copy/paste the text (wit the usual vi dance with ESC, ESC-i, :wq etc) 
+So, my work tries to support the Technicolor CGA4233 from VOO in Belgium. Compared to the version of Jack, it hammers the modem every 3 minutes (in order to keep the session alive). It needs you to update the curl command around line 815 of modmon.sh, and paste the tokens for PHP session and authentication (also in CSRF). I got them with F12 (Developer tools)/Network/Reload/Copy as curl. And you need to either start modmon fast, or keep the session alive until it starts. You have 5 minutes at most... I usually have a  ssh session active, cd /jffs/scripts, rm modmon, vi modmon, ESC-i, copy/paste the text with the center mouse button, ESC-:wq (or something similar, or whatever works with your favourite editor) 
 
 modmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
@@ -31,7 +31,7 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 /usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/waluwaz/modmon/master/modmon.sh" -o "/jffs/scripts/modmon" && chmod 0755 /jffs/scripts/modmon && /jffs/scripts/modmon install
 ```
 
-And anyway, don't remember the special dance to adapt the script to an active session. See above. This modiofication has to be renewed if the modem reboots for instance.
+And anyway, don't forget the special dance to adapt the script to an active session. See above. This modiofication might have to be renewed, e.g. if the modem reboots for instance.
 
 ## Usage
 ### WebUI
