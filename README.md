@@ -5,27 +5,33 @@
 ## v1.1.8
 ### Updated on 2021-08-05
 ## About
-modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries.
+modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. It was created by JackYaz. This repository has a derivative work based on modmon and customized to work with another modem, the Technicolor CGA4233 from VOO in Belgium. It doesn't have a specific name, because I'm not sure how to change the name without breaking it; also because it probably couldn't coexist with the original modmon, and finally because I can't imagine a scenario where one would need the original modmon and my hack.
 
-Currently only the Virgin Media Hub 3.0 is supported.
+My hack tries to support the Technicolor CGA4233 from VOO in Belgium. Compared to the version of Jack, it hammers the modem every 3 minutes (in order to keep the session alive). It needs you to update the curl command around line 815 of modmon.sh, and paste the tokens for PHP session and authentication (also in CSRF). I got them with F12 (Developer tools)/Network/Reload/Copy as curl. And you need to either start modmon fast, or keep the session alive until it starts. You have 5 minutes at most... I usually have a  ssh session active, I open the router file with vi, and copy/paste the text (wit the usual vi dance with ESC, ESC-i, :wq etc) 
 
 modmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
 ### Supporting development
-Love the script and want to support future development? Any and all donations gratefully received!
+Love the script ? Any and all donations gratefully sent to JackYaz who did 100% of the work for the original modmon, which means 99% of the work for this. For more reliability, please navigate to Jack's repo and click Paypal from his repo.
 
-| [![paypal](https://www.paypalobjects.com/en_GB/i/btn/btn_donate_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=47UTYVRBDKSTL) <br /><br /> [**PayPal donation**](https://www.paypal.com/donate/?hosted_button_id=47UTYVRBDKSTL) | [![paypal](https://puu.sh/IAhtp/3788f3a473.png)](https://www.paypal.com/donate/?hosted_button_id=47UTYVRBDKSTL) |
-| :----: | --- |
-
-## Supported firmware versions
+## Recommended firmware versions
 You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asuswrt-Merlin](https://www.asuswrt-merlin.net/)
 
 ## Installation
+Install the original modmon from JackYaz in version 1.1.8. See his instructions.
+Replace the modmon file in /jffs/scripts with the modmon from my repo. ! The name in the router must be modmon, not modmon.sh.
+The modmon file on the browser must be executable (chmod a+x).
+I guess my Master branch is your best bet.
+
+Alternatively, if you are feeling lucky, you could try the following, untested approach to install:
+
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```sh
-/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/modmon/master/modmon.sh" -o "/jffs/scripts/modmon" && chmod 0755 /jffs/scripts/modmon && /jffs/scripts/modmon install
+/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/waluwaz/modmon/master/modmon.sh" -o "/jffs/scripts/modmon" && chmod 0755 /jffs/scripts/modmon && /jffs/scripts/modmon install
 ```
+
+And anyway, don't remember the special dance to adapt the script to an active session. See above. This modiofication has to be renewed if the modem reboots for instance.
 
 ## Usage
 ### WebUI
@@ -43,10 +49,8 @@ If this does not work, you will need to use the full path:
 ```
 
 ## Screenshots
-
-![WebUI](https://puu.sh/Hry9G/74c63b43ee.png)
-
-![CLI UI](https://puu.sh/Hry5U/64561d7d35.png)
+See Jack's repo for the flavour of the UI.
 
 ## Help
-Please post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/?prefix_id=21)
+You can post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/?prefix_id=21)
+but I don't get there often, and I probably won't be available to help.
