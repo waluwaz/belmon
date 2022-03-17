@@ -9,9 +9,10 @@ var ShowLines = GetCookie('ShowLines','string');
 var DragZoom = true;
 var ChartPan = false;
 
-var metriclist = ['RxPwr','RxSnr','RxPstRs','TxPwr','TxT3Out','TxT4Out'];
-var titlelist = ['Downstream Power','Downstream SNR','Post-RS Errors','Upstream Power','T3 Timeouts','T4 Timeouts'];
-var measureunitlist = ['dBmV','dB','','dBmV','',''];
+// var metriclist = ['RxPwr','RxSnr','RxPstRs','TxPwr','TxT3Out','TxT4Out'];
+var metriclist = ['RxPwr','RxSnr','RxFreq','RxOctets','RxCorr','RxUncor','TxPwr'];
+var titlelist = ['Downstream Power','Downstream SNR','Frequency','Octets','Corrected','Uncorrectable','Upstream Power'];
+var measureunitlist = ['dBmV','dB','MHz','','','','dBmV'];
 var chartlist = ['daily','weekly','monthly'];
 var timeunitlist = ['hour','day','day'];
 var intervallist = [24,7,30];
@@ -440,17 +441,20 @@ function changeChart(e) {
 	else if(name == 'RxSnr'){
 		Draw_Chart('RxSnr',titlelist[1],measureunitlist[1]);
 	}
-	else if(name == 'RxPstRs'){
-		Draw_Chart('RxPstRs',titlelist[2],measureunitlist[2]);
+	else if(name == 'RxFreq'){
+		Draw_Chart('RxFreq',titlelist[2],measureunitlist[2]);
+	}
+	else if(name == 'RxOctets'){
+		Draw_Chart('RxOctets',titlelist[3],measureunitlist[3]);
+	}
+	else if(name == 'RxCorr'){
+		Draw_Chart('RxCorr',titlelist[4],measureunitlist[4]);
+	}
+	else if(name == 'RxUncor'){
+		Draw_Chart('RxUncor',titlelist[5],measureunitlist[5]);
 	}
 	else if(name == 'TxPwr'){
-		Draw_Chart('TxPwr',titlelist[3],measureunitlist[3]);
-	}
-	else if(name == 'TxT3Out'){
-		Draw_Chart('TxT3Out',titlelist[4],measureunitlist[4]);
-	}
-	else if(name == 'TxT4Out'){
-		Draw_Chart('TxT4Out',titlelist[5],measureunitlist[5]);
+		Draw_Chart('TxPwr',titlelist[6],measureunitlist[6]);
 	}
 }
 

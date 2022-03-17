@@ -8,7 +8,7 @@
 ##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##
 ##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##
 ##                                                        ##
-##           https://github.com/jackyaz/modmon            ##
+##           https://github.com/waluwaz/modmon            ##
 ##                                                        ##
 ############################################################
 
@@ -24,7 +24,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.1.8"
+readonly SCRIPT_VERSION="v0.0.2"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -772,19 +772,21 @@ Get_Modem_Stats(){
 
 
 
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
-# It appears that those very metric's name are expected by other parts of the solution:
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+
+# It appears that those very metric's name might be expected by other parts of the solution:
 # for instance: SELECT [Timestamp] FROM modstats_RxPwr
-# As a start, I will keep those metric name, even though they might store values with different meanings
-# The 6 metrics could be mapped as follows (Jack(s metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
+# In this branch, I will try to fully adapt the code to metrics for VOO
+# The metrics could be mapped as follows (modmon's metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
 # 				"ChannelID": "10",
-# TxT4Out       "Frequency": "522 MHz",
+# Frequency		       "Frequency": "522 MHz",
 # RxPwr & TxPwr OK:        "PowerLevel": "-4.8 dBmV",
 # RxSnr			        "SNRLevel": "38.3 dB",
 #        				"Modulation": "256-QAM",
-#        				"Octets": "772717700",
-# TxT3Out		        "Correcteds": "248675",
-# RxPstRs		        "Uncorrectables": "9629",
+# Octets       				"Octets": "772717700",
+# Correcteds		        "Correcteds": "248675",
+# Uncorrectables	        "Uncorrectables": "9629",
 #        "LockStatus": "Locked",
 #        "ChannelType": "SC-QAM"
 	
@@ -814,14 +816,14 @@ Get_Modem_Stats(){
 
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
 
-# Processing the TX, UpStream
-cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/PowerLevel/TxPwr/ | sed s/ChannelID/TxChannelID/ | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"
 
 # Processing the Rx, DownStream
-cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/PowerLevel/RxPwr/  | sed s/ChannelID/RxChannelID/ | sed s/Correcteds/TxT3Out/ | sed s/Frequency/TxT4Out/ | sed s/Uncorrectables/RxPstRs/ | sed s/SNRLevel/RxSnr/ | sed s/__id/01Discard/  | sed s/Frequency/02Discard/ | sed s/Modulation/03Discard/ | sed s/Octets/04Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
+cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/ChannelID/RxChannelID/ | sed s/PowerLevel/RxPwr/ | sed s/SNRLevel/RxSnr/ | sed s/Frequency/RxFreq/  | sed s/Octets/RxOctets/ | sed s/Correcteds/RxCorr/  | sed s/Uncorrectables/RxUncor/  | sed s/__id/01Discard/  | sed s/Modulation/03Discard/ | sed s/Octets/04Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
 # Note that the filtering above with grep, that ensures that only target measures stay in the file will work 
 # because I artificially renamed lines with 0x prefix and the Discard keyword
 
+# Processing the TX, UpStream
+cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/ChannelID/TxChannelID/ | sed s/PowerLevel/TxPwr/  | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"
 
 # testing: See documentation subtree, with 05_test_script_to_prepare_data.sh
 
@@ -904,7 +906,8 @@ Generate_CSVs(){
 	timenow="$(date '+%s')"
 	timenowfriendly="$(date +"%c")"
 	
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 	
 	for metric in $metriclist; do
 	{
@@ -991,7 +994,8 @@ Generate_CSVs(){
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 	for metric in $metriclist; do
 	{
 		echo ".mode csv"
@@ -1010,8 +1014,10 @@ Generate_CSVs(){
 		opkg update
 		opkg install coreutils-paste
 	fi
-	paste -d ',' /tmp/CompleteResults_RxTimes.htm /tmp/CompleteResults_RxChannels.htm /tmp/CompleteResults_RxPwr.htm /tmp/CompleteResults_RxSnr.htm /tmp/CompleteResults_RxPstRs.htm > "$CSV_OUTPUT_DIR/CompleteResults_Rx.htm"
-	paste -d ',' /tmp/CompleteResults_TxTimes.htm /tmp/CompleteResults_TxChannels.htm /tmp/CompleteResults_TxPwr.htm /tmp/CompleteResults_TxT3Out.htm /tmp/CompleteResults_TxT4Out.htm > "$CSV_OUTPUT_DIR/CompleteResults_Tx.htm"
+	#paste -d ',' /tmp/CompleteResults_RxTimes.htm /tmp/CompleteResults_RxChannels.htm /tmp/CompleteResults_RxPwr.htm /tmp/CompleteResults_RxSnr.htm /tmp/CompleteResults_RxPstRs.htm > "$CSV_OUTPUT_DIR/CompleteResults_Rx.htm"
+	paste -d ',' /tmp/CompleteResults_RxTimes.htm /tmp/CompleteResults_RxChannels.htm /tmp/CompleteResults_RxPwr.htm /tmp/CompleteResults_RxSnr.htm /tmp/CompleteResults_RxFreq.htm /tmp/CompleteResults_RxOctets.htm /tmp/CompleteResults_RxCorr.htm /tmp/CompleteResults_RxUncor.htm > "$CSV_OUTPUT_DIR/CompleteResults_Rx.htm"
+	#paste -d ',' /tmp/CompleteResults_TxTimes.htm /tmp/CompleteResults_TxChannels.htm /tmp/CompleteResults_TxPwr.htm > "$CSV_OUTPUT_DIR/CompleteResults_Tx.htm"
+	paste -d ',' /tmp/CompleteResults_TxTimes.htm /tmp/CompleteResults_TxChannels.htm /tmp/CompleteResults_TxPwr.htm  > "$CSV_OUTPUT_DIR/CompleteResults_Tx.htm"
 	
 	rm -f /tmp/CompleteResults*.htm
 	
@@ -1071,7 +1077,8 @@ Reset_DB(){
 			Print_Output true "Database backup failed, please check storage device" "$WARN"
 		fi
 		
-		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 		for metric in $metriclist; do
 			echo "DELETE FROM [modstats_$metric];" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
@@ -1087,7 +1094,8 @@ Process_Upgrade(){
 		renice 15 $$
 		Print_Output true "Creating database table indexes..." "$PASS"
 		
-		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"		
 		for metric in $metriclist; do
 			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/modmon-upgrade.sql
 			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
@@ -1359,7 +1367,8 @@ Menu_Install(){
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_Script create
 	
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"	
 	
 	for metric in $metriclist; do
 		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
