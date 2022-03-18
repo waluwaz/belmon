@@ -403,7 +403,7 @@ function GetMaxChannels(){
 		var varname='LineChart_'+metriclist[i];
 		/* For e.g. Rx, we have a filtering option to select channels. Different metric might cover different number of channels.
 		The code assumes that the channels are always 1..n, with no gaps. 
-		This is how, for 16 channels scattered across 11..22, the UI shows filters for 1..16 */
+		This is how, for 16 channels scattered across 1..22, the UI shows filters for 1..16 */
 		var channelcount=window[varname].data.datasets.length;
 		if(varname.indexOf('Rx') != -1){
 			RxCountArray.push(channelcount);
@@ -820,7 +820,7 @@ function UpdateStats(){
 	showhide('btnUpdateStats',false);
 	document.formScriptActions.action_script.value = 'start_modmon';
 	document.formScriptActions.submit();
-	document.getElementById('modupdate_text').innerHTML = 'Retrieving VOO Technicolor stats';
+	document.getElementById('modupdate_text').innerHTML = 'Retrieving VOO stats';
 	showhide('imgModUpdate',true);
 	showhide('modupdate_text',true);
 	setTimeout(update_modtest,5000);
