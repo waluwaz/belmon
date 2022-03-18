@@ -818,7 +818,7 @@ Get_Modem_Stats(){
 
 
 # Processing the Rx, DownStream
-cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/ChannelID/RxChannelID/ | sed s/PowerLevel/RxPwr/ | sed s/SNRLevel/RxSnr/ | sed s/Frequency/RxFreq/  | sed s/Octets/RxOctets/ | sed s/Correcteds/RxCorr/  | sed s/Uncorrectables/RxUncor/  | sed s/__id/01Discard/  | sed s/Modulation/03Discard/ | sed s/Octets/04Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
+cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/ChannelID/RxChannelID/ | sed s/PowerLevel/RxPwr/ | sed s/SNRLevel/RxSnr/ | sed s/Frequency/RxFreq/  | sed s/Octets/RxOctets/ | sed s/Correcteds/RxCorr/  | sed s/Uncorrectables/RxUncor/  | sed s/__id/01Discard/  | sed s/Modulation/03Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
 # Note that the filtering above with grep, that ensures that only target measures stay in the file will work 
 # because I artificially renamed lines with 0x prefix and the Discard keyword
 
