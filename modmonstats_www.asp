@@ -84,7 +84,6 @@ var $j=jQuery.noConflict(),arraysortlistlines=[],sortname="Time",sortdir="desc",
 <thead class="collapsible-jquery" id="scripttools">
 <tr><td colspan="2">Utilities (click to expand/collapse)</td></tr>
 </thead>
-<!--
 <tr>
 <th width="20%">Version information</th>
 <td>
@@ -98,7 +97,6 @@ var $j=jQuery.noConflict(),arraysortlistlines=[],sortname="Time",sortdir="desc",
 &nbsp;&nbsp;&nbsp;
 </td>
 </tr>
--->
 <tr>
 <th width="20%">Update stats</th>
 <td>
@@ -154,7 +152,6 @@ var $j=jQuery.noConflict(),arraysortlistlines=[],sortname="Time",sortdir="desc",
 <label for="modmon_storageloc_usb">USB</label>
 </td>
 </tr>
-<!--
 <tr class="even" id="rowfixtxpwr">
 <td class="settingname">Fix Upstream Power level reporting<br /><span class="settingname">(reduce by 10x, fix for new Hub 3 firmware)</span></td>
 <td class="settingvalue">
@@ -164,7 +161,6 @@ var $j=jQuery.noConflict(),arraysortlistlines=[],sortname="Time",sortdir="desc",
 <label for="modmon_fixtxpwr_false">False</label>
 </td>
 </tr>
--->
 <tr class="apply_gen" valign="top" height="35px">
 <td colspan="2" class="savebutton">
 <input type="button" onclick="SaveConfig();" value="Save" class="button_gen savebutton" name="button">
