@@ -782,7 +782,7 @@ function update_modtest(){
 			}
 			else if(modmonstatus == 'LOCKED'){
 				showhide('imgModUpdate',false);
-				document.getElementById('modupdate_text').innerHTML = 'Scheduled Hub 3 stat update already running!';
+				document.getElementById('modupdate_text').innerHTML = 'Scheduled stat update already running!';
 				showhide('btnUpdateStats',true);
 			}
 			else if(modmonstatus == 'Done'){

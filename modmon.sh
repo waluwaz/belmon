@@ -1051,17 +1051,24 @@ Generate_Modem_Logs(){
 	rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
 	rm -f "$SCRIPT_STORAGE_DIR/modlogs.htm"
 	rm -f /tmp/modlogs.csv
-	logcount="$(grep -c "DevEv" $shstatsfile)"
+
+	shstatsfile_logtbl="/tmp/shstats_logtbl.csv"
+
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/LogTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57' | jq '.data.LogTbl' | sed 's/__id/A__id/' | sed 's/"//g' | sed 's/: /,,/'  > "$shstatsfile_logtbl"
+
+	logcount="$(grep -c "A__id" $shstatsfile_logtbl)"
 	counter=1
 	until [ $counter -gt "$logcount" ]; do
-		logtime="$(grep "DevEv" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
-		logprio="$(grep "DevEv" $shstatsfile | sed "$((counter+1))!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
-		logmessage="$(grep "DevEv" $shstatsfile | sed "$((counter+2))!d" | cut -d',' -f3)"
+		logtime="$(grep "time,," $shstatsfile_logtbl | sed "$counter!d" | cut -d',' -f3)"
+		logprio="$(grep "level,," $shstatsfile_logtbl | sed "$counter!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
+		logmessage="$(grep "text,," $shstatsfile_logtbl | sed "$counter!d" | cut -d',' -f3)"
 		echo "$logtime,$logprio,$logmessage" >> /tmp/modlogs.csv
-		counter=$((counter + 3))
+		counter=$((counter + 1))
 	done
 	
 	mv /tmp/modlogs.csv "$SCRIPT_STORAGE_DIR/modlogs.csv"
+
+	rm -f "$shstatsfile_logtbl"
 }
 
 Reset_DB(){
@@ -1155,10 +1162,10 @@ ScriptHeader(){
 	printf "${BOLD}##   |  _ \` _ \  / _ \  / _\` ||  _ \` _ \  / _ \ |  _ \    ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                   VOO                  ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##                   %s on %-11s                ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
 	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##            https://github.com/jackyaz/modmon           ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##            https://github.com/waluwaz/modmon           ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
 	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
 	printf "\\n"
@@ -1171,13 +1178,13 @@ MainMenu(){
 	else
 		FIXTXPWR_MENU="Disabled"
 	fi
-	printf "WebUI for %s is available at:\\n${SETTING}%s${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
+	printf "WebUI for %s VOO is available at:\\n${SETTING}%s${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
 	printf "1.    Check stats now\\n\\n"
 	printf "2.    Toggle data output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode check)"
 	printf "3.    Toggle time output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} time values will be used for CSV exports\\n\\n" "$(OutputTimeMode check)"
 	printf "4.    Set number of days data to keep in database\\n      Currently: ${SETTING}%s days data will be kept${CLEARFORMAT}\\n\\n" "$(DaysToKeep check)"
 	printf "s.    Toggle storage location for stats and config\\n      Current location is ${SETTING}%s${CLEARFORMAT} \\n\\n" "$(ScriptStorageLocation check)"
-	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s${CLEARFORMAT} \\n\\n" "$FIXTXPWR_MENU"
+#	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s${CLEARFORMAT} \\n\\n" "$FIXTXPWR_MENU"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "r.    Reset %s database / delete all data\\n\\n" "$SCRIPT_NAME"
@@ -1235,15 +1242,15 @@ MainMenu(){
 				fi
 				break
 			;;
-			f)
-				printf "\\n"
-				if [ "$(FixTxPwr check)" = "true" ]; then
-					FixTxPwr false
-				elif [ "$(FixTxPwr check)" = "false" ]; then
-					FixTxPwr true
-				fi
-				break
-			;;
+#			f)
+#				printf "\\n"
+#				if [ "$(FixTxPwr check)" = "true" ]; then
+#					FixTxPwr false
+#				elif [ "$(FixTxPwr check)" = "false" ]; then
+#					FixTxPwr true
+#				fi
+#				break
+#			;;
 			u)
 				printf "\\n"
 				if Check_Lock menu; then
