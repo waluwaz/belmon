@@ -803,24 +803,23 @@ Get_Modem_Stats(){
 # The processing also does additional processing to globally prepare the text 
 # Ultimately, this produces a file, $shstatsfile
 #
-# Note that the lines from my modem exhibit a few differences (on top of being one long line being structured as json, but this can be solved by jq )
+# Note that the lines from the VOO modem exhibit a few differences (on top of being one long line being structured as json, but this can be solved by jq )
 # Note the leading "blanks", note the blank after the colonn, note the minus sign, the decimal part and the unit.
-# Jacks's solution must also deal with decimal parts for power level, so the code must be OK with it. 
-# I guess the code that can deal with decimals can deal with negative figures.
-#         "PowerLevel": "-4.6 dBmV",
 #	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 
 # curl 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl?_=1647373319922' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate' -H 'X-CSRF-TOKEN: 2d39f236c2776485efc99f15d411b5f5' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Referer: http://192.168.100.1/' -H 'Cookie: lang=fr; PHPSESSID=42degahqbb8u5kikpbfiid5s6n; auth=2d39f236c2776485efc99f15d411b5f5' -H 'DNT: 1' -H 'Sec-GPC: 1' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache'
 
 
-
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
+#	The API call to feed the standard webpage in the standard admin UI, requests 5 items (exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl).
+#	The curl call o nly request the 2 items from which data gets really extracted. Note that exUSTbl and exDSTbl are seemingly always empty.
+#	Note that ErrTbl seems to have data that is also available in another item.  
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
 
 
 # Processing the Rx, DownStream
 cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/ChannelID/RxChannelID/ | sed s/PowerLevel/RxPwr/ | sed s/SNRLevel/RxSnr/ | sed s/Frequency/RxFreq/  | sed s/Octets/RxOctets/ | sed s/Correcteds/RxCorr/  | sed s/Uncorrectables/RxUncor/  | sed s/__id/01Discard/  | sed s/Modulation/03Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
 # Note that the filtering above with grep, that ensures that only target measures stay in the file will work 
-# because I artificially renamed lines with 0x prefix and the Discard keyword
+# because I artificially renamed lines with 0x prefix (and the Discard keyword for clarity's sake)
 
 # Processing the TX, UpStream
 cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/ChannelID/TxChannelID/ | sed s/PowerLevel/TxPwr/  | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"

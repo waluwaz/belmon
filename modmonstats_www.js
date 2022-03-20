@@ -366,7 +366,7 @@ function getAverage(datasetname){
 
 function startAtZero(datasetname){
 	var starty = false;
-	if(datasetname.indexOf('RxOctets') != -1 || datasetname.indexOf('RxCorr') != -1 || datasetname.indexOf('RxUncor') != -1){
+	if(datasetname.indexOf('RxFreq') != -1 || datasetname.indexOf('RxOctets') != -1 || datasetname.indexOf('RxCorr') != -1 || datasetname.indexOf('RxUncor') != -1){
 		starty = true;
 	}
 	return starty;
