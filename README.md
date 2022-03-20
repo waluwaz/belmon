@@ -57,3 +57,10 @@ You can post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBFo
 but I don't get there often, and I probably won't be available to help.
 
 I guess you already understood, this is not a well-rounded solution for a large audience. This is proof that it could work for me; and if your setup is similar; and you have a similar skillset, you will probably be able to get there with less effort than I did originally. Use it if you like, if you are interested in experimenting, not if you need a reliable solution.
+
+Known issues:
+The timestamps in the log table are wrong. The order is probably wrong too.
+Legend is so dynamic that channel 22 in chart A may have a different colour than 22 in chart B.
+Count of "lines" in charts is somewhat buggy. The filtering is usually not display, even though it shoud be displayed.
+The choice of timeslice (daily, weekly, monthly) should apply to all graphs.
+The choice of timeslice in zoom (e.g. from 19:00 'til 22:00) should apply to all graphs.
