@@ -399,20 +399,23 @@ function SetRxTxColours(){
 function GetMaxChannels(){
 	var RxCountArray = [];
 	var TxCountArray = [];
-/*	for(var i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		var varname='LineChart_'+metriclist[i];
-		var channelcount=window[varname].data.datasets.length;
 		if(varname.indexOf('Rx') != -1){
+			var channelcount=window[varname].data.datasets.length;
 			RxCountArray.push(channelcount);
 		}
 		else{
+/*			var channelcount=window[varname].data.datasets.length;
 			TxCountArray.push(channelcount);
+*/
+			TxCount = 4;
 		}
 	}
 	RxCount = Math.max.apply(Math,RxCountArray);
-	TxCount = Math.max.apply(Math,TxCountArray);
+/*	TxCount = Math.max.apply(Math,TxCountArray);
+	"LineChart_TxPwr" results in exception
 */
-	RxCount = 22;
 	TxCount = 4;
 }
 
