@@ -399,7 +399,7 @@ function SetRxTxColours(){
 function GetMaxChannels(){
 	var RxCountArray = [];
 	var TxCountArray = [];
-	for(var i = 0; i < metriclist.length; i++){
+/*	for(var i = 0; i < metriclist.length; i++){
 		var varname='LineChart_'+metriclist[i];
 		var channelcount=window[varname].data.datasets.length;
 		if(varname.indexOf('Rx') != -1){
@@ -410,7 +410,9 @@ function GetMaxChannels(){
 		}
 	}
 	RxCount = Math.max.apply(Math,RxCountArray);
-/*	TxCount = Math.max.apply(Math,TxCountArray); */
+	TxCount = Math.max.apply(Math,TxCountArray);
+*/
+	RxCount = 22;
 	TxCount = 4;
 }
 
