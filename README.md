@@ -62,7 +62,13 @@ but I don't get there often, and I probably won't be available to help.
 I guess you already understood, this is not a well-rounded solution for a large audience. This is proof that it could work for me; and if your setup is similar; and you have a similar skillset, you will probably be able to get there with less effort than I did originally. Use it if you like, if you are interested in experimenting, not if you need a reliable solution.
 
 Known issues:
-The timestamps in the log table are wrong. The order is probably wrong too.
+The timestamps in the log table are wrong. The order is probably wrong too. See ParseModemLogs, and the exotic date format: 
+  time,,Mon Mar 14 09:57:05 2022\n,
+        ddd MMM DD HH:mm:ss YYYY
+  which doesn't match
+  			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+
+
 Legend is so dynamic that channel 22 in chart A may have a different colour than 22 in chart B.
 Count of "graphic lines" in charts is somewhat buggy. The filtering is usually not display, even though it shoud be displayed.
 !! Filtering not working on Uncorrectable, that has only 16 channels, instead of 20.

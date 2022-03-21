@@ -900,7 +900,9 @@ function ParseModemLogs(data){
 		try{
 			var resultfields = arraysortlines[i].split(',');
 			var parsedsortline = new Object();
-			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+/*			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');*/
+			parsedsortline.Time =  moment(resultfields[0].trim(),'ddd MMM DD HH:mm:ss YYYY').format('YYYY-MM-DD HH:mm:ss');
+
 			parsedsortline.Priority = resultfields[1].trim();
 			parsedsortline.Message = resultfields[2].trim();
 			arraysortlistlines.push(parsedsortline);
