@@ -9,9 +9,10 @@ var ShowLines = GetCookie('ShowLines','string');
 var DragZoom = true;
 var ChartPan = false;
 
-var metriclist = ['RxPwr','RxSnr','RxPstRs','TxPwr','TxT3Out','TxT4Out'];
-var titlelist = ['Downstream Power','Downstream SNR','Post-RS Errors','Upstream Power','T3 Timeouts','T4 Timeouts'];
-var measureunitlist = ['dBmV','dB','','dBmV','',''];
+// var metriclist = ['RxPwr','RxSnr','RxPstRs','TxPwr','TxT3Out','TxT4Out'];
+var metriclist = ['RxPwr','RxSnr','RxFreq','RxOctets','RxCorr','RxUncor','TxPwr'];
+var titlelist = ['Downstream Power','Downstream SNR','Frequency','Octets','Corrected','Uncorrectable','Upstream Power'];
+var measureunitlist = ['dBmV','dB','MHz','','','','dBmV'];
 var chartlist = ['daily','weekly','monthly'];
 var timeunitlist = ['hour','day','day'];
 var intervallist = [24,7,30];
@@ -365,7 +366,7 @@ function getAverage(datasetname){
 
 function startAtZero(datasetname){
 	var starty = false;
-	if(datasetname.indexOf('PstRS') != -1 || datasetname.indexOf('T3Out') != -1 || datasetname.indexOf('T4Out') != -1){
+	if(datasetname.indexOf('RxFreq') != -1 || datasetname.indexOf('RxOctets') != -1 || datasetname.indexOf('RxCorr') != -1 || datasetname.indexOf('RxUncor') != -1){
 		starty = true;
 	}
 	return starty;
@@ -391,8 +392,10 @@ function poolColors(a){
 }
 
 function SetRxTxColours(){
-	RxColours = poolColors(RxCount);
-	TxColours = poolColors(TxCount);
+	# RxColours = poolColors(RxCount);
+	RxColours = poolColors(22);
+	# TxColours = poolColors(TxCount);
+	TxColours = poolColors(4);
 }
 
 function GetMaxChannels(){
@@ -400,16 +403,22 @@ function GetMaxChannels(){
 	var TxCountArray = [];
 	for(var i = 0; i < metriclist.length; i++){
 		var varname='LineChart_'+metriclist[i];
-		var channelcount=window[varname].data.datasets.length;
 		if(varname.indexOf('Rx') != -1){
+			var channelcount=window[varname].data.datasets.length;
 			RxCountArray.push(channelcount);
 		}
 		else{
+/*			var channelcount=window[varname].data.datasets.length;
 			TxCountArray.push(channelcount);
+*/
+			TxCount = 4;
 		}
 	}
 	RxCount = Math.max.apply(Math,RxCountArray);
-	TxCount = Math.max.apply(Math,TxCountArray);
+/*	TxCount = Math.max.apply(Math,TxCountArray);
+	"LineChart_TxPwr" results in exception
+*/
+	TxCount = 4;
 }
 
 function ToggleLines(){
@@ -440,17 +449,20 @@ function changeChart(e) {
 	else if(name == 'RxSnr'){
 		Draw_Chart('RxSnr',titlelist[1],measureunitlist[1]);
 	}
-	else if(name == 'RxPstRs'){
-		Draw_Chart('RxPstRs',titlelist[2],measureunitlist[2]);
+	else if(name == 'RxFreq'){
+		Draw_Chart('RxFreq',titlelist[2],measureunitlist[2]);
+	}
+	else if(name == 'RxOctets'){
+		Draw_Chart('RxOctets',titlelist[3],measureunitlist[3]);
+	}
+	else if(name == 'RxCorr'){
+		Draw_Chart('RxCorr',titlelist[4],measureunitlist[4]);
+	}
+	else if(name == 'RxUncor'){
+		Draw_Chart('RxUncor',titlelist[5],measureunitlist[5]);
 	}
 	else if(name == 'TxPwr'){
-		Draw_Chart('TxPwr',titlelist[2],measureunitlist[3]);
-	}
-	else if(name == 'TxT3Out'){
-		Draw_Chart('TxT3Out',titlelist[4],measureunitlist[4]);
-	}
-	else if(name == 'TxT4Out'){
-		Draw_Chart('TxT4Out',titlelist[5],measureunitlist[5]);
+		Draw_Chart('TxPwr',titlelist[6],measureunitlist[6]);
 	}
 }
 
@@ -777,7 +789,7 @@ function update_modtest(){
 			}
 			else if(modmonstatus == 'LOCKED'){
 				showhide('imgModUpdate',false);
-				document.getElementById('modupdate_text').innerHTML = 'Scheduled Hub 3 stat update already running!';
+				document.getElementById('modupdate_text').innerHTML = 'Scheduled stat update already running!';
 				showhide('btnUpdateStats',true);
 			}
 			else if(modmonstatus == 'Done'){
@@ -813,7 +825,7 @@ function UpdateStats(){
 	showhide('btnUpdateStats',false);
 	document.formScriptActions.action_script.value = 'start_modmon';
 	document.formScriptActions.submit();
-	document.getElementById('modupdate_text').innerHTML = 'Retrieving VOO Technicolor stats';
+	document.getElementById('modupdate_text').innerHTML = 'Retrieving VOO stats';
 	showhide('imgModUpdate',true);
 	showhide('modupdate_text',true);
 	setTimeout(update_modtest,5000);
