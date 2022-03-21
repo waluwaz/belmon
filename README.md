@@ -51,6 +51,8 @@ If this does not work, you will need to use the full path:
 
 ## Screenshots
 See Jack's repo for the flavour of the UI.
+
+See below for a sample with this script and a modem from VOO. Notice how, at least in my street, the modem uses 16 channels, ranging from 1 to 22 (typically 1-16; or another blend with 19-22, and without 5-8). Look at the "Frequency" chart, approx. Chart Nr 4.
 ![](/documentation/Technicolor_CGA4233_VOO/Screenshot%202022-03-21%20at%2021-53-20%20modmon.png)
 
 ## Help
