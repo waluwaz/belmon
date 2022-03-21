@@ -833,7 +833,7 @@ rm -f "$shstatsfile_curl"
 rm -f "$shstatsfile_dst"
 rm -f "$shstatsfile_ust"
 
-# If the file is not empty, it is processed, each of the 6 metric in turn	
+# If the file is not empty, it is processed, each of the 6 or 7 metric in turn	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
@@ -860,7 +860,14 @@ rm -f "$shstatsfile_ust"
 				# For the VOO modem, a vector with the applicable channel numbers/IDs should be first prepared,
 				# in order to subsequently feed the database with the applicable channel number/ID.
 				# Note that, as a first step, sticking values in pseudo channels 1 to 16 would be good enough
-				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$channel,$measurement);" >> /tmp/modmon-stats.sql
+
+				# For Corrected, Uncorrectable and Octets, the VOO modem seems to sometimes report a count of zero for channel zero...
+				# Note that this happened only once over a few days. It happened only for those 3 metrics. 
+				# It happened at the very same timestamp for all 3 metrics.
+				# https://192.168.17.1:8443/ext/modmon/csv/RxOctets_weekly.htm
+				# Channel,Time,Value "Ch. 0",1647659701,0.0 "Ch. 1",1647883860,3041822933.0 "Ch. 1",
+				if [ $channel -ge 1 ]; then echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$channel,$measurement);" >> /tmp/modmon-stats.sql
+				fi
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
