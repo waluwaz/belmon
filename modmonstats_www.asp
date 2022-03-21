@@ -41,6 +41,8 @@ function LoadCustomSettings(){
 		}
 	}
 }
+
+
 var $j = jQuery.noConflict(); //avoid conflicts on John's fork (state.js)
 var arraysortlistlines = [];
 var sortname = 'Time';
@@ -435,8 +437,10 @@ function poolColors(a){
 }
 
 function SetRxTxColours(){
-	RxColours = poolColors(RxCount);
-	TxColours = poolColors(TxCount);
+	# RxColours = poolColors(RxCount);
+	RxColours = poolColors(22);
+	# TxColours = poolColors(TxCount);
+	TxColours = poolColors(4);
 }
 
 function GetMaxChannels(){
@@ -941,7 +945,10 @@ function ParseModemLogs(data){
 		try{
 			var resultfields = arraysortlines[i].split(',');
 			var parsedsortline = new Object();
-			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+/*			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');*/
+/*			https://www.tutorialspoint.com/momentjs/momentjs_string.htm */
+			parsedsortline.Time =  moment(resultfields[0].trim(),'ddd MMM DD HH:mm:ss YYYY').format('YYYY-MM-DD HH:mm:ss');
+
 			parsedsortline.Priority = resultfields[1].trim();
 			parsedsortline.Message = resultfields[2].trim();
 			arraysortlistlines.push(parsedsortline);
@@ -1249,6 +1256,10 @@ function AddEventHandlers(){
 		}
 	});
 }
+
+
+
+
 
 </script>
 </head>
