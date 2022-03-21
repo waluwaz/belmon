@@ -392,8 +392,10 @@ function poolColors(a){
 }
 
 function SetRxTxColours(){
-	RxColours = poolColors(RxCount);
-	TxColours = poolColors(TxCount);
+	# RxColours = poolColors(RxCount);
+	RxColours = poolColors(22);
+	# TxColours = poolColors(TxCount);
+	TxColours = poolColors(4);
 }
 
 function GetMaxChannels(){
