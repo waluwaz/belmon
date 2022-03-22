@@ -392,9 +392,10 @@ function poolColors(a){
 }
 
 function SetRxTxColours(){
-	# RxColours = poolColors(RxCount);
+	/* RxColours = poolColors(RxCount); 
+	TxColours = poolColors(TxCount);
+	*/
 	RxColours = poolColors(22);
-	# TxColours = poolColors(TxCount);
 	TxColours = poolColors(4);
 }
 
@@ -900,8 +901,8 @@ function ParseModemLogs(data){
 		try{
 			var resultfields = arraysortlines[i].split(',');
 			var parsedsortline = new Object();
-/*			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');*/
-/*			https://www.tutorialspoint.com/momentjs/momentjs_string.htm */
+/*			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+			https://www.tutorialspoint.com/momentjs/momentjs_string.htm */
 			parsedsortline.Time =  moment(resultfields[0].trim(),'ddd MMM DD HH:mm:ss YYYY').format('YYYY-MM-DD HH:mm:ss');
 
 			parsedsortline.Priority = resultfields[1].trim();
