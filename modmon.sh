@@ -660,7 +660,7 @@ DaysToKeep(){
 			exitmenu=""
 			ScriptHeader
 			while true; do
-				printf "\\n${BOLD}Please enter the desired number of days\\nto keep data for (30-365 days):${CLEARFORMAT}  "
+				printf "\\n${BOLD}Please enter the desired number of days\\nto keep data for (10-365 days):${CLEARFORMAT}  "
 				read -r daystokeep_choice
 				
 				if [ "$daystokeep_choice" = "e" ]; then
@@ -668,8 +668,8 @@ DaysToKeep(){
 					break
 				elif ! Validate_Number "$daystokeep_choice"; then
 					printf "\\n${ERR}Please enter a valid number (30-365)${CLEARFORMAT}\\n"
-				elif [ "$daystokeep_choice" -lt 30 ] || [ "$daystokeep_choice" -gt 365 ]; then
-						printf "\\n${ERR}Please enter a number between 30 and 365${CLEARFORMAT}\\n"
+				elif [ "$daystokeep_choice" -lt 10 ] || [ "$daystokeep_choice" -gt 365 ]; then
+						printf "\\n${ERR}Please enter a number between 10 and 365${CLEARFORMAT}\\n"
 				else
 					daystokeep="$daystokeep_choice"
 					printf "\\n"
