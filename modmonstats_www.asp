@@ -1363,7 +1363,7 @@ function AddEventHandlers(){
 </td>
 </tr>
 <tr class="even" id="rowstorageloc">
-<td class="settingname">Data Storage Location</td>
+<td class="settingname">Data Storage Location - recommended: USB</td>
 <td class="settingvalue">
 <input type="radio" name="modmon_storagelocation" id="modmon_storageloc_jffs" class="input" value="jffs" checked>
 <label for="modmon_storageloc_jffs">JFFS</label>
@@ -1371,6 +1371,7 @@ function AddEventHandlers(){
 <label for="modmon_storageloc_usb">USB</label>
 </td>
 </tr>
+/* Not applicable to VOO modem 
 <tr class="even" id="rowfixtxpwr">
 <td class="settingname">Fix Upstream Power level reporting<br /><span class="settingname">(reduce by 10x, fix for new Hub 3 firmware)</span></td>
 <td class="settingvalue">
@@ -1380,6 +1381,7 @@ function AddEventHandlers(){
 <label for="modmon_fixtxpwr_false">False</label>
 </td>
 </tr>
+*/
 <tr class="apply_gen" valign="top" height="35px">
 <td colspan="2" class="savebutton">
 <input type="button" onclick="SaveConfig();" value="Save" class="button_gen savebutton" name="button">
