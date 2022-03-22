@@ -1,0 +1,190 @@
+/* The first steps, like V0.1 were reusing the metric names from Jack.
+Accordingly the table names were the "old" metric names from Jack.
+Subsequently, I transitioned to new metric names, in line with the actually available data; and with one extra metric (7 instead of 6).
+Moreover, at some point, I reset the database. 
+I was interested in restoring all those data, some in the same DB but in different tables. Some in the backup table.
+I used some extra code due to the ID field having to be unique     */
+
+/* Code to "restore" one metric stuck in one table (based on its name) and move it to the new/target name/db */
+/* More complex than it seems cause of an ID that must be unique of course */
+
+/* ************************************* */
+/*Dealing with the pair TxT3Out/RxCorr */
+select min(old.StatID), max(old.StatID), min(old.Timestamp), max(old.Timestamp) 
+from modstats_TxT3Out old
+;
+select min(new.StatID), max(new.StatID), min(new.Timestamp),  max(new.Timestamp)
+from modstats_RxCorr  new
+;
+
+1	20880	1647382680	
+		1647795420
+1	19041	1647620100	
+		1647975660
+
+/* 448	*/		
+select count(*) from modstats_TxT3Out
+where Timestamp >= 1647620100 and Timestamp <= 1647795420
+;
+
+/*14704: meaning that during the overlapping slice, actually, it was mostly the new script, with just a tiny bit of rerun of the old script */
+select count(*) from modstats_RxCorr
+where Timestamp >= 1647620100 and Timestamp <= 1647795420
+;
+
+update modstats_RxCorr
+set StatID=StatID+20881
+;
+
+insert into modstats_RxCorr
+select * from modstats_TxT3Out
+;
+
+/* ************************************* */
+/*Dealing with the pair TxT4Out/RxFreq */
+select min(old.StatID), max(old.StatID), min(old.Timestamp), max(old.Timestamp) 
+from modstats_TxT4Out old
+;
+select min(new.StatID), max(new.StatID), min(new.Timestamp),  max(new.Timestamp)
+from modstats_RxFreq  new
+;
+
+1	20880	1647382680	
+		    1647795420
+
+1	19041	1647620100	
+		    1647975660
+
+update modstats_RxFreq
+set StatID=StatID+20881
+;
+
+insert into modstats_RxFreq
+select * from modstats_TxT4Out
+;
+
+
+/* ************************************* */
+/*Dealing with the pair RxPstRs/RxUncor */
+select min(old.StatID), max(old.StatID), min(old.Timestamp), max(old.Timestamp) 
+from modstats_RxPstRs old
+;
+select min(new.StatID), max(new.StatID), min(new.Timestamp),  max(new.Timestamp)
+from modstats_RxUncor  new
+;
+
+1	20880	1647382680	1647795420
+
+1	19041	1647620100	1647975660
+
+update modstats_RxUncor
+set StatID=StatID+20881
+;
+
+insert into modstats_RxUncor
+select * from modstats_RxPstRs
+;
+
+/* Deleted/dropped the 3 tables */
+
+/* **************************************************************** */
+/* NOW DEALING WITH THE DATA in the BACKUP, before the DB was reset */
+/* **************************************************************** */
+
+/* The backup has some data with the old metric names. And some data with new metric names. */
+/* Dealing with the pair TxT3Out/RxCorr */
+select min(old.StatID), max(old.StatID), min(old.Timestamp), max(old.Timestamp) 
+from b.modstats_TxT3Out old
+;
+
+update modstats_RxCorr
+set StatID=StatID+100000
+;
+
+insert into modstats_RxCorr
+select * from b.modstats_TxT3Out
+;
+
+/* ************************************* */
+/*Dealing with the pair TxT4Out/RxFreq */
+
+update modstats_RxFreq
+set StatID=StatID+100000
+;
+
+insert into modstats_RxFreq
+select * from b.modstats_TxT4Out
+;
+
+/* ************************************* */
+/*Dealing with the pair RxPstRs/RxUncor */
+update modstats_RxUncor
+set StatID=StatID+100000
+;
+
+insert into modstats_RxUncor
+select * from b.modstats_RxPstRs
+;
+
+/* *************************************** */
+/* Now dealing with the 7 new metric names */
+update modstats_RxPwr
+set StatID=StatID+200000
+;
+
+insert into modstats_RxPwr
+select * from b.modstats_RxPwr
+;
+
+/* metriclist="RxPwr+ RxSnr+ RxFreq+ RxOctets+ RxCorr+ RxUncor+ TxPwr+" 
+  The + sign means that the metric was processed below */
+
+update modstats_RxSnr
+set StatID=StatID+200000
+;
+
+insert into modstats_RxSnr
+select * from b.modstats_RxSnr
+;
+
+update modstats_RxFreq
+set StatID=StatID+200000
+;
+
+insert into modstats_RxFreq
+select * from b.modstats_RxFreq
+;
+/* executed so far */
+
+update modstats_RxOctets
+set StatID=StatID+200000
+;
+
+insert into modstats_RxOctets
+select * from b.modstats_RxOctets
+;
+
+update modstats_RxCorr
+set StatID=StatID+200000
+;
+
+insert into modstats_RxCorr
+select * from b.modstats_RxCorr
+;
+
+update modstats_RxUncor
+set StatID=StatID+200000
+;
+
+insert into modstats_RxUncor
+select * from b.modstats_RxUncor
+;
+
+update modstats_TxPwr
+set StatID=StatID+200000
+;
+
+insert into modstats_TxPwr
+select * from b.modstats_TxPwr
+;
+
