@@ -393,10 +393,16 @@ function poolColors(a){
 
 function SetRxTxColours(){
 	/* RxColours = poolColors(RxCount); 
+	I have only ever seen Channel 22 on my VOO modem. 
+	The original code prepares 16 colours if there are 16 channels to be reported on (e.g. on the current day for daily chart).
+	The new intent is to display channel 22 with "colour 22", regardless of the fact that there were 16 or 20 channels 
+	to be considered over the time period (e.g. monthly)  */
+	if (RxCount > 22) then {
+		RxColours = poolColors(RxCount)
+	}	else {
+		RxColours = poolColors(22);
+	}
 	TxColours = poolColors(TxCount);
-	*/
-	RxColours = poolColors(22);
-	TxColours = poolColors(4);
 }
 
 function GetMaxChannels(){
