@@ -1363,17 +1363,16 @@ function AddEventHandlers(){
 </td>
 </tr>
 <tr class="even" id="rowstorageloc">
-<td class="settingname">Data Storage Location - recommended: USB</td>
+<td class="settingname">Data Storage Location - <a href="https://github.com/RMerl/asuswrt-merlin.ng/wiki/Jffs/29a43db5de76c2ada7a3362745bfce08a9e7d029">recommended</a>: USB</td>
 <td class="settingvalue">
-<input type="radio" name="modmon_storagelocation" id="modmon_storageloc_jffs" class="input" value="jffs" checked>
+<input type="radio" name="modmon_storagelocation" id="modmon_storageloc_jffs" class="input" value="jffs" >
 <label for="modmon_storageloc_jffs">JFFS</label>
-<input type="radio" name="modmon_storagelocation" id="modmon_storageloc_usb" class="input" value="usb">
+<input type="radio" name="modmon_storagelocation" id="modmon_storageloc_usb" class="input" value="usb" checked>
 <label for="modmon_storageloc_usb">USB</label>
 </td>
 </tr>
-/* Not applicable to VOO modem 
 <tr class="even" id="rowfixtxpwr">
-<td class="settingname">Fix Upstream Power level reporting<br /><span class="settingname">(reduce by 10x, fix for new Hub 3 firmware)</span></td>
+<td class="settingname">Placeholder for potential future setting (now disabled)</span></td>
 <td class="settingvalue">
 <input type="radio" name="modmon_fixtxpwr" id="modmon_fixtxpwr_true" class="input" value="true" checked>
 <label for="modmon_fixtxpwr_true">True</label>
@@ -1381,7 +1380,6 @@ function AddEventHandlers(){
 <label for="modmon_fixtxpwr_false">False</label>
 </td>
 </tr>
-*/
 <tr class="apply_gen" valign="top" height="35px">
 <td colspan="2" class="savebutton">
 <input type="button" onclick="SaveConfig();" value="Save" class="button_gen savebutton" name="button">
