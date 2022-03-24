@@ -397,7 +397,7 @@ function SetRxTxColours(){
 	The original code prepares 16 colours if there are 16 channels to be reported on (e.g. on the current day for daily chart).
 	The new intent is to display channel 22 with "colour 22", regardless of the fact that there were 16 or 20 channels 
 	to be considered over the time period (e.g. monthly)  */
-	if (RxCount > 22) then {
+	if (RxCount > 22)  {
 		RxColours = poolColors(RxCount)
 	}	else {
 		RxColours = poolColors(22);

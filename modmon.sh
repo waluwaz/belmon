@@ -24,7 +24,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v0.2.0-beta"
+readonly SCRIPT_VERSION="v0.3.0-beta"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/waluwaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
