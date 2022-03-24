@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 ![Shellcheck](https://github.com/jackyaz/modmon/actions/workflows/shellcheck.yml/badge.svg)
 
-## v0.2.0-alpha
-### Updated on 2022-03-16
+## v0.3.0-alpha
+### Updated on 2022-03-24
 ## About
 modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. It was created by JackYaz. This repository has a derivative work based on modmon and customized to work with another modem, the Technicolor CGA4233 from VOO in Belgium. It doesn't have a specific name, because I'm not sure how to change the name without breaking it   ;-)  ; also because it probably couldn't coexist with the original modmon, and finally because I can't imagine a scenario where someone would concurrently need the original modmon and my hack.
 
