@@ -392,10 +392,17 @@ function poolColors(a){
 }
 
 function SetRxTxColours(){
-	# RxColours = poolColors(RxCount);
-	RxColours = poolColors(22);
-	# TxColours = poolColors(TxCount);
-	TxColours = poolColors(4);
+	/* RxColours = poolColors(RxCount); 
+	I have only ever seen Channel 22 on my VOO modem. 
+	The original code prepares 16 colours if there are 16 channels to be reported on (e.g. on the current day for daily chart).
+	The new intent is to display channel 22 with "colour 22", regardless of the fact that there were 16 or 20 channels 
+	to be considered over the time period (e.g. monthly)  */
+	if (RxCount > 22)  {
+		RxColours = poolColors(RxCount)
+	}	else {
+		RxColours = poolColors(22);
+	}
+	TxColours = poolColors(TxCount);
 }
 
 function GetMaxChannels(){
@@ -748,7 +755,7 @@ function Format_Number_Setting(forminput){
 
 function Validate_All(){
 	var validationfailed = false;
-	if(! Validate_Number_Setting(document.form.modmon_daystokeep,365,30)){validationfailed=true;}
+	if(! Validate_Number_Setting(document.form.modmon_daystokeep,365,10)){validationfailed=true;}
 	
 	if(validationfailed){
 		alert('Validation for some fields failed. Please correct invalid values and try again.');
@@ -900,7 +907,10 @@ function ParseModemLogs(data){
 		try{
 			var resultfields = arraysortlines[i].split(',');
 			var parsedsortline = new Object();
-			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+/*			parsedsortline.Time =  moment(resultfields[0].trim(),'DD/MM/YYYY HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+			https://www.tutorialspoint.com/momentjs/momentjs_string.htm */
+			parsedsortline.Time =  moment(resultfields[0].trim(),'ddd MMM DD HH:mm:ss YYYY').format('YYYY-MM-DD HH:mm:ss');
+
 			parsedsortline.Priority = resultfields[1].trim();
 			parsedsortline.Message = resultfields[2].trim();
 			arraysortlistlines.push(parsedsortline);
