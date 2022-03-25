@@ -1,0 +1,72 @@
+@AC86:/tmp# ls -al | grep sh
+-rw-rw-rw-    1 ojadot   root           292 May  5  2018 run_lldpd.sh
+drwxr-xr-x    2 ojadot   root            40 Jan  1  1970 share
+-rw-rw-rw-    1 ojadot   root          5817 Mar 15 22:09 shstats_curl.csv
+-rw-rw-rw-    1 ojadot   root          4664 Mar 15 22:09 shstats_dst.csv
+-rw-rw-rw-    1 ojadot   root           875 Mar 15 22:09 shstats_ust.csv
+
+
+
+
+@AC86:/tmp# more shstats_curl.csv 
+{"error":"ok","message":"all values retrieved","data":{"exUSTbl":[],"exDSTbl":[],"USTbl":[{"__id":"1","ChannelID":"1","Frequency":"50.7 MHz","PowerLevel":"45.0 dBmV","ChannelType":"SC-QAM","SymbolRate":"5120000","Modulation":"32-qam","LockStatus":"Locked"},{"__id":"2","ChannelID":"2","Frequency":"57.2 MHz","PowerLevel":"45.5 dBmV","ChannelType":"SC-QAM","SymbolRate":"5120000","Modulation":"32-qam","LockStatus":"Locked"},{"__id":"3","ChannelID":"3","Frequency":"37.2 MHz","PowerLevel":"44.8 dBmV","ChannelType":"SC-QAM","SymbolRate":"5120000","Modulation":"32-qam","LockStatus":"Locked"},{"__id":"4","ChannelID":"4","Frequency":"44.2 MHz","PowerLevel":"44.3 dBmV","ChannelType":"SC-QAM","SymbolRate":"5120000","Modulation":"32-qam","LockStatus":"Locked"}],"DSTbl":[{"__id":"1","ChannelID":"1","Frequency":"450 MHz","PowerLevel":"0.4 dBmV","SNRLevel":"40.1 dB","Modulation":"256-QAM","Octets":"3020746134","Correcteds":"13104","Uncorrectables":"3255","LockStatus":"Locked","ChannelType":"SC-QAM"},{"__id":"2","ChannelID":"2","Frequency":"458 MHz","PowerLevel":"-1.2 dBmV","SNRLevel":"40.0 dB","Modulation":"256-QAM","Octets":"3025944770","Correcteds":"27560","Uncorrectables":"71793","LockStatus":"Locked","ChannelType":"SC-QAM"},{"__id":"3","ChannelID":"3","Frequency":"466 MHz","PowerLevel":"0.9 dBmV","SNRLevel":"40.2 dB","Modulation":"256-QAM","Octets":"3006144907","Correcteds
+
+
+
+
+@AC86:/tmp# more shstats_ust.csv 
+[
+  {
+    "01Discard": "1",
+    "TxChannelID": "1",
+    "02Discard": "50.7 MHz",
+    "TxPwr": "45.0 dBmV",
+    "03Discard": "SC-QAM",
+    "04Discard": "5120000",
+    "05Discard": "32-qam",
+    "06Discard": "Locked"
+  },
+  {
+    "01Discard": "2",
+    "TxChannelID": "2",
+    "02Discard": "57.2 MHz",
+    "TxPwr": "45.5 dBmV",
+
+
+
+
+
+@AC86:/tmp# more shstats_dst.csv 
+[
+  {
+    "01Discard": "1",
+    "RxChannelID": "1",
+    "TxT4Out": "450 MHz",
+    "RxPwr": "0.5 dBmV",
+    "RxSnr": "40.1 dB",
+    "03Discard": "256-QAM",
+    "04Discard": "3025454509",
+    "TxT3Out": "13107",
+    "RxPstRs": "3255",
+    "05Discard": "Locked",
+    "06Discard": "SC-QAM"
+  },
+  {
+    "01Discard": "2",
+    "RxChannelID": "2",
+    "TxT4Out": "458 MHz",
+    "RxPwr": "-1.3 dBmV",
+    "RxSnr": "39.9 dB",
+    "03Discard": "256-QAM",
+    "04Discard": "3030654195",
+    "TxT3Out": "27563",
+    "RxPstRs": "71793",
+    "05Discard": "Locked",
+    "06Discard": "SC-QAM"
+  },
+  {
+    "01Discard": "3",
+    "RxChannelID": "3",
+    "TxT4Out": "466 MHz",
+    "RxPwr": "-1.0 dBmV",
+    "RxSnr": "40.1 dB",

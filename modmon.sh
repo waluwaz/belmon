@@ -8,7 +8,7 @@
 ##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##
 ##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##
 ##                                                        ##
-##           https://github.com/jackyaz/modmon            ##
+##           https://github.com/waluwaz/modmon            ##
 ##                                                        ##
 ############################################################
 
@@ -24,9 +24,9 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.1.8"
+readonly SCRIPT_VERSION="v0.3.0-beta"
 SCRIPT_BRANCH="master"
-SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+SCRIPT_REPO="https://raw.githubusercontent.com/waluwaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
@@ -436,13 +436,20 @@ Auto_Startup(){
 	esac
 }
 
+
+# The original modmon of JackYaz monitored the modem every 30 minutes. 
+# Note how the scheduling targetted minute 15 and 46, while spdMerlin targetted 12 and 42, so avoiding overlap.
+# For the CGA4233 of VOO, the session timeout of the WEBUI closes the connection after 5 minutes.
+# As I don't know how to reauthenticate, I hammer the modem every 3 minutes or so to ensure that the session stays open.
+# See cru statement below, starting with */3 for the settings applyed to the minutes 
+# Additionnally, at my adress, I had fast power changes, hence the desirability for frequent updates, much more frequent tha every 30 minutes.
 Auto_Cron(){
 	case $1 in
 		create)
 			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
 			
 			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
-				cru a "$SCRIPT_NAME" "16,46 * * * * /jffs/scripts/$SCRIPT_NAME generate"
+				cru a "$SCRIPT_NAME" "1,16,31,46 * * * *  /jffs/scripts/$SCRIPT_NAME generate"
 			fi
 		;;
 		delete)
@@ -653,7 +660,7 @@ DaysToKeep(){
 			exitmenu=""
 			ScriptHeader
 			while true; do
-				printf "\\n${BOLD}Please enter the desired number of days\\nto keep data for (30-365 days):${CLEARFORMAT}  "
+				printf "\\n${BOLD}Please enter the desired number of days\\nto keep data for (10-365 days):${CLEARFORMAT}  "
 				read -r daystokeep_choice
 				
 				if [ "$daystokeep_choice" = "e" ]; then
@@ -661,8 +668,8 @@ DaysToKeep(){
 					break
 				elif ! Validate_Number "$daystokeep_choice"; then
 					printf "\\n${ERR}Please enter a valid number (30-365)${CLEARFORMAT}\\n"
-				elif [ "$daystokeep_choice" -lt 30 ] || [ "$daystokeep_choice" -gt 365 ]; then
-						printf "\\n${ERR}Please enter a number between 30 and 365${CLEARFORMAT}\\n"
+				elif [ "$daystokeep_choice" -lt 10 ] || [ "$daystokeep_choice" -gt 365 ]; then
+						printf "\\n${ERR}Please enter a number between 10 and 365${CLEARFORMAT}\\n"
 				else
 					daystokeep="$daystokeep_choice"
 					printf "\\n"
@@ -716,6 +723,10 @@ WriteSql_ToFile(){
 		dividefactor=10
 	fi
 	
+
+	# For the VOO modem, no sign that a dividefactor would be necessary
+	dividefactor=1
+
 	echo "SELECT ('Ch. ' || [ChannelNum]) Channel,Min([Timestamp]) Time,IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY Channel,([Timestamp]/($multiplier)) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;" >> "$7"
 }
 
@@ -744,27 +755,119 @@ Get_Modem_Stats(){
 	timenow="$(date '+%s')"
 	timenowfriendly="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
-	
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+
+	# additional temp files used to generate the $shstatsfile as expected by the rest of the code
+	shstatsfile_curl="/tmp/shstats_curl.csv"
+	shstatsfile_dst="/tmp/shstats_dst.csv"
+	shstatsfile_ust="/tmp/shstats_ust.csv"
+
+# The original version tracks 6 metrics. 
+# Every metrics gets a dedicated SQL table
+# Each table has the same structure
+# Metrics are processed one at a time: a file is created with all INSERT SQL statements for that metric (/tmp/modmon-stats.sql). 
+# When the file for one metric is ready, it is executed as SQL to actually populate the relevant table.
+# Subsequently, the same table is "purged" from old records, based on the retention period
+# Finally, the text file with the INSERT statements is deleted
+
+
+
+
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+
+# It appears that those very metric's name might be expected by other parts of the solution:
+# for instance: SELECT [Timestamp] FROM modstats_RxPwr
+# In this branch, I will try to fully adapt the code to metrics for VOO
+# The metrics could be mapped as follows (modmon's metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
+# 				"ChannelID": "10",
+# Frequency		       "Frequency": "522 MHz",
+# RxPwr & TxPwr OK:        "PowerLevel": "-4.8 dBmV",
+# RxSnr			        "SNRLevel": "38.3 dB",
+#        				"Modulation": "256-QAM",
+# Octets       				"Octets": "772717700",
+# Correcteds		        "Correcteds": "248675",
+# Uncorrectables	        "Uncorrectables": "9629",
+#        "LockStatus": "Locked",
+#        "ChannelType": "SC-QAM"
 	
 	echo 'var modmonstatus = "InProgress";' > /tmp/detect_modmon.js
 	
 	Process_Upgrade
-	
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
-	
+
+# See https://www.gnu.org/software/sed/manual/html_node/The-_0022s_0022-Command.html
+# The original target modem produces a file with one value per line, like
+#	"1.3.6.1.2.1.10.127.1.1.4.1.3.2":"1791416",
+# The values in the file are identified by numbers, as per the concept of OIDs in SNMP (https://www.dpstele.com/snmp/what-does-oid-network-elements.php)
+# The code below replaces the OID numbers by the name of the metrics (among the 6 defined above, plus some more which are not used any further)
+# It then only keeps the lines that start with letters, i.e. the ones that have received a metric name (with letters) instead of the SNMP OID (with digits).
+# The processing also does additional processing to globally prepare the text 
+# Ultimately, this produces a file, $shstatsfile
+#
+# Note that the lines from the VOO modem exhibit a few differences (on top of being one long line being structured as json, but this can be solved by jq )
+# Note the leading "blanks", note the blank after the colonn, note the minus sign, the decimal part and the unit.
+#	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
+
+# curl 'http://192.168.100.1/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl?_=1647373319922' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate' -H 'X-CSRF-TOKEN: 2d39f236c2776485efc99f15d411b5f5' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Referer: http://192.168.100.1/' -H 'Cookie: lang=fr; PHPSESSID=42degahqbb8u5kikpbfiid5s6n; auth=2d39f236c2776485efc99f15d411b5f5' -H 'DNT: 1' -H 'Sec-GPC: 1' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache'
+
+
+#	The API call to feed the standard webpage in the standard admin UI, requests 5 items (exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl).
+#	The curl call o nly request the 2 items from which data gets really extracted. Note that exUSTbl and exDSTbl are seemingly always empty.
+#	Note that ErrTbl seems to have data that is also available in another item.  
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
+
+
+# Processing the Rx, DownStream
+cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/ChannelID/RxChannelID/ | sed s/PowerLevel/RxPwr/ | sed s/SNRLevel/RxSnr/ | sed s/Frequency/RxFreq/  | sed s/Octets/RxOctets/ | sed s/Correcteds/RxCorr/  | sed s/Uncorrectables/RxUncor/  | sed s/__id/01Discard/  | sed s/Modulation/03Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
+# Note that the filtering above with grep, that ensures that only target measures stay in the file will work 
+# because I artificially renamed lines with 0x prefix (and the Discard keyword for clarity's sake)
+
+# Processing the TX, UpStream
+cat "$shstatsfile_curl" | jq '.data.USTbl' | sed s/ChannelID/TxChannelID/ | sed s/PowerLevel/TxPwr/  | sed s/__id/01Discard/ | sed s/Frequency/02Discard/ | sed s/ChannelType/03Discard/ | sed s/SymbolRate/04Discard/ | sed s/Modulation/05Discard/ | sed s/LockStatus/06Discard/ > "$shstatsfile_ust"
+
+# testing: See documentation subtree, with 05_test_script_to_prepare_data.sh
+
+# https://www.cyberciti.biz/tips/delete-leading-spaces-from-front-of-each-word.html
+cat "$shstatsfile_ust" "$shstatsfile_dst" | sed 's/MHz//' | sed 's/dBmV//' | sed 's/dB//' | sed 's/"//g' | sed 's/:/,,/' | sed 's/ //g' | grep "^[A-Za-z]"  > "$shstatsfile"
+
+rm -f "$shstatsfile_curl"
+rm -f "$shstatsfile_dst"
+rm -f "$shstatsfile_ust"
+
+# If the file is not empty, it is processed, each of the 6 or 7 metric in turn	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
-			channelcount="$(grep -c "$metric" $shstatsfile)"
+			channelcount="$(grep -c "$metric" $shstatsfile)"    # one counts the number of lines for the current metric
 			
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
-				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
-				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$counter,$measurement);" >> /tmp/modmon-stats.sql
+				# grep limits the processing to only the target metric
+				# sed takes the Nth value
+				# cut takes the third value, based on comma as a delimiter
+									   measurement="$(grep "$metric"   $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				# For DownStream/Rx, the channels are in a varying order, with some absent channels, so the counter is not equal to the channel
+				    					   channel="$(grep RxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				# same logic for TX 
+				if [ $metric = TxPwr ]; then channel="$(grep TxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				fi
+
+				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
+				# This is not very suitable for my case where the modem reports values for a varying set of 16 channels; 
+				# among a total of 20 physical channels (from 1 to 22, not including 17 and 18)
+				# For the VOO modem, a vector with the applicable channel numbers/IDs should be first prepared,
+				# in order to subsequently feed the database with the applicable channel number/ID.
+				# Note that, as a first step, sticking values in pseudo channels 1 to 16 would be good enough
+
+				# For Corrected, Uncorrectable and Octets, the VOO modem seems to sometimes report a count of zero for channel zero...
+				# Note that this happened only once over a few days. It happened only for those 3 metrics. 
+				# It happened at the very same timestamp for all 3 metrics.
+				# https://192.168.17.1:8443/ext/modmon/csv/RxOctets_weekly.htm
+				# Channel,Time,Value "Ch. 0",1647659701,0.0 "Ch. 1",1647883860,3041822933.0 "Ch. 1",
+				if [ $channel -ge 1 ]; then echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$channel,$measurement);" >> /tmp/modmon-stats.sql
+				fi
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
@@ -809,7 +912,8 @@ Generate_CSVs(){
 	timenow="$(date '+%s')"
 	timenowfriendly="$(date +"%c")"
 	
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 	
 	for metric in $metriclist; do
 	{
@@ -821,7 +925,10 @@ Generate_CSVs(){
 		if echo "$metric" | grep -qF "TxPwr" && [ "$(FixTxPwr "check")" = "true" ]; then
 			dividefactor=10
 		fi
-		
+
+		# For the VOO modem, no sign that a dividefactor would be necessary
+		dividefactor=1
+
 		{
 			echo ".mode csv"
 			echo ".headers on"
@@ -893,7 +1000,8 @@ Generate_CSVs(){
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 	for metric in $metriclist; do
 	{
 		echo ".mode csv"
@@ -912,8 +1020,10 @@ Generate_CSVs(){
 		opkg update
 		opkg install coreutils-paste
 	fi
-	paste -d ',' /tmp/CompleteResults_RxTimes.htm /tmp/CompleteResults_RxChannels.htm /tmp/CompleteResults_RxPwr.htm /tmp/CompleteResults_RxSnr.htm /tmp/CompleteResults_RxPstRs.htm > "$CSV_OUTPUT_DIR/CompleteResults_Rx.htm"
-	paste -d ',' /tmp/CompleteResults_TxTimes.htm /tmp/CompleteResults_TxChannels.htm /tmp/CompleteResults_TxPwr.htm /tmp/CompleteResults_TxT3Out.htm /tmp/CompleteResults_TxT4Out.htm > "$CSV_OUTPUT_DIR/CompleteResults_Tx.htm"
+	#paste -d ',' /tmp/CompleteResults_RxTimes.htm /tmp/CompleteResults_RxChannels.htm /tmp/CompleteResults_RxPwr.htm /tmp/CompleteResults_RxSnr.htm /tmp/CompleteResults_RxPstRs.htm > "$CSV_OUTPUT_DIR/CompleteResults_Rx.htm"
+	paste -d ',' /tmp/CompleteResults_RxTimes.htm /tmp/CompleteResults_RxChannels.htm /tmp/CompleteResults_RxPwr.htm /tmp/CompleteResults_RxSnr.htm /tmp/CompleteResults_RxFreq.htm /tmp/CompleteResults_RxOctets.htm /tmp/CompleteResults_RxCorr.htm /tmp/CompleteResults_RxUncor.htm > "$CSV_OUTPUT_DIR/CompleteResults_Rx.htm"
+	#paste -d ',' /tmp/CompleteResults_TxTimes.htm /tmp/CompleteResults_TxChannels.htm /tmp/CompleteResults_TxPwr.htm > "$CSV_OUTPUT_DIR/CompleteResults_Tx.htm"
+	paste -d ',' /tmp/CompleteResults_TxTimes.htm /tmp/CompleteResults_TxChannels.htm /tmp/CompleteResults_TxPwr.htm  > "$CSV_OUTPUT_DIR/CompleteResults_Tx.htm"
 	
 	rm -f /tmp/CompleteResults*.htm
 	
@@ -948,17 +1058,24 @@ Generate_Modem_Logs(){
 	rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
 	rm -f "$SCRIPT_STORAGE_DIR/modlogs.htm"
 	rm -f /tmp/modlogs.csv
-	logcount="$(grep -c "DevEv" $shstatsfile)"
+
+	shstatsfile_logtbl="/tmp/shstats_logtbl.csv"
+
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/LogTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57' | jq '.data.LogTbl' | sed 's/__id/A__id/' | sed 's/"//g' | sed 's/: /,,/'  > "$shstatsfile_logtbl"
+
+	logcount="$(grep -c "A__id" $shstatsfile_logtbl)"
 	counter=1
 	until [ $counter -gt "$logcount" ]; do
-		logtime="$(grep "DevEv" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
-		logprio="$(grep "DevEv" $shstatsfile | sed "$((counter+1))!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
-		logmessage="$(grep "DevEv" $shstatsfile | sed "$((counter+2))!d" | cut -d',' -f3)"
+		logtime="$(grep "time,," $shstatsfile_logtbl | sed "$counter!d" | cut -d',' -f3)"
+		logprio="$(grep "level,," $shstatsfile_logtbl | sed "$counter!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
+		logmessage="$(grep "text,," $shstatsfile_logtbl | sed "$counter!d" | cut -d',' -f3)"
 		echo "$logtime,$logprio,$logmessage" >> /tmp/modlogs.csv
-		counter=$((counter + 3))
+		counter=$((counter + 1))
 	done
 	
 	mv /tmp/modlogs.csv "$SCRIPT_STORAGE_DIR/modlogs.csv"
+
+	rm -f "$shstatsfile_logtbl"
 }
 
 Reset_DB(){
@@ -973,7 +1090,8 @@ Reset_DB(){
 			Print_Output true "Database backup failed, please check storage device" "$WARN"
 		fi
 		
-		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 		for metric in $metriclist; do
 			echo "DELETE FROM [modstats_$metric];" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
@@ -989,7 +1107,8 @@ Process_Upgrade(){
 		renice 15 $$
 		Print_Output true "Creating database table indexes..." "$PASS"
 		
-		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"		
 		for metric in $metriclist; do
 			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/modmon-upgrade.sql
 			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
@@ -1050,10 +1169,10 @@ ScriptHeader(){
 	printf "${BOLD}##   |  _ \` _ \  / _ \  / _\` ||  _ \` _ \  / _ \ |  _ \    ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                   VOO                  ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##                   %s on %-11s                ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
 	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##            https://github.com/jackyaz/modmon           ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##            https://github.com/waluwaz/modmon           ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
 	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
 	printf "\\n"
@@ -1066,13 +1185,13 @@ MainMenu(){
 	else
 		FIXTXPWR_MENU="Disabled"
 	fi
-	printf "WebUI for %s is available at:\\n${SETTING}%s${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
+	printf "WebUI for %s VOO is available at:\\n${SETTING}%s${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
 	printf "1.    Check stats now\\n\\n"
 	printf "2.    Toggle data output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode check)"
 	printf "3.    Toggle time output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} time values will be used for CSV exports\\n\\n" "$(OutputTimeMode check)"
 	printf "4.    Set number of days data to keep in database\\n      Currently: ${SETTING}%s days data will be kept${CLEARFORMAT}\\n\\n" "$(DaysToKeep check)"
 	printf "s.    Toggle storage location for stats and config\\n      Current location is ${SETTING}%s${CLEARFORMAT} \\n\\n" "$(ScriptStorageLocation check)"
-	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s${CLEARFORMAT} \\n\\n" "$FIXTXPWR_MENU"
+#	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s${CLEARFORMAT} \\n\\n" "$FIXTXPWR_MENU"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "r.    Reset %s database / delete all data\\n\\n" "$SCRIPT_NAME"
@@ -1130,15 +1249,15 @@ MainMenu(){
 				fi
 				break
 			;;
-			f)
-				printf "\\n"
-				if [ "$(FixTxPwr check)" = "true" ]; then
-					FixTxPwr false
-				elif [ "$(FixTxPwr check)" = "false" ]; then
-					FixTxPwr true
-				fi
-				break
-			;;
+#			f)
+#				printf "\\n"
+#				if [ "$(FixTxPwr check)" = "true" ]; then
+#					FixTxPwr false
+#				elif [ "$(FixTxPwr check)" = "false" ]; then
+#					FixTxPwr true
+#				fi
+#				break
+#			;;
 			u)
 				printf "\\n"
 				if Check_Lock menu; then
@@ -1261,7 +1380,8 @@ Menu_Install(){
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_Script create
 	
-	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+#	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"	
 	
 	for metric in $metriclist; do
 		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
