@@ -24,7 +24,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v0.3.0-beta"
+readonly SCRIPT_VERSION="v0.4.0-beta"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/waluwaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -556,7 +556,7 @@ Mount_WebUI(){
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
 	flock -u "$FD"
-	Print_Output true "Mounted $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
+	Print_Output true "Mounted $SCRIPT_NAME WebUI page as $MyPage . Harvesting stats for a few minutes, please be patient..." "$PASS"
 }
 
 ScriptStorageLocation(){

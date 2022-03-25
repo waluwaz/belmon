@@ -287,8 +287,12 @@ function getDataSets(txtchartname,objdata,objchannels){
 		var channeldata = objdata.filter(function(item){
 			return item.Channel == objchannels[i];
 		}).map(function(d){return {x: d.Time,y: d.Value}});
-		
-		datasets.push({ label: objchannels[i],data: channeldata,borderWidth: 1,pointRadius: 1,lineTension: 0,fill: false,backgroundColor: chartColours[i],borderColor: chartColours[i]});
+		if(txtchartname.indexOf('RxFreq') != -1 ) {
+			datasets.push({ label: objchannels[i],data: channeldata,showLine: false,borderWidth: 1,pointRadius: 1,lineTension: 0,fill: false,backgroundColor: chartColours[i],borderColor: chartColours[i]});
+		} else
+		{
+			datasets.push({ label: objchannels[i],data: channeldata,borderWidth: 1,pointRadius: 1,lineTension: 0,fill: false,backgroundColor: chartColours[i],borderColor: chartColours[i]});
+		}
 	}
 	return datasets;
 }
