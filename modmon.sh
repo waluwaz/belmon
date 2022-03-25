@@ -556,7 +556,7 @@ Mount_WebUI(){
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
 	flock -u "$FD"
-	Print_Output true "Mounted $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
+	Print_Output true "Mounted $SCRIPT_NAME WebUI page as $MyPage . Harvesting stats for a few minutes, please be patient..." "$PASS"
 }
 
 ScriptStorageLocation(){
