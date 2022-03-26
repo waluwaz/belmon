@@ -2,7 +2,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/waluwaz/belmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=waluwaz/belmon&amp;utm_campaign=Badge_Grade)
 ![Shellcheck](https://github.com/waluwaz/belmon/actions/workflows/shellcheck.yml/badge.svg)
 
-## v0.4.0-beta
+## v0.5.1-beta
 ### Updated on 2022-03-25
 ## About
 belmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. 
