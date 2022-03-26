@@ -1,22 +1,23 @@
-# modmon
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/waluwaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=waluwaz/modmon&amp;utm_campaign=Badge_Grade)
-![Shellcheck](https://github.com/waluwaz/modmon/actions/workflows/shellcheck.yml/badge.svg)
+# belmon
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/waluwaz/belmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=waluwaz/belmon&amp;utm_campaign=Badge_Grade)
+![Shellcheck](https://github.com/waluwaz/belmon/actions/workflows/shellcheck.yml/badge.svg)
 
-## v0.4.0-beta
+## v0.5.1-beta
 ### Updated on 2022-03-25
 ## About
-modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. It was created by JackYaz. 
-This repository has a derivative work based on modmon and customized to work with another modem, the Technicolor CGA4233 from VOO in Belgium. It doesn't have a specific name, because I'm not sure how to change the name without breaking it   ;-)  ; also because it probably couldn't coexist with the original modmon, and finally because I can't imagine a scenario where someone would concurrently need the original modmon and my hack as I'm not aware anyone in Belgium (or anywhere else) would have the option to use the target modem of this and the target modem of the original modmon.
+belmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. 
+It is mostly identical to modmon created by JackYaz. However, belmon is customized for another modem, the Technicolor CGA4233 installed by VOO to its customers in Belgium. 
 
-So, my work tries to support the Technicolor CGA4233 from VOO in Belgium. Compared to the version of Jack, it hammers the modem every 15 minutes. It possibly needs you to update the curl command around line 815 and 1044 of modmon in /jffs/scripts, and paste the tokens for PHP session and authentication (also in CSRF). I got them with F12 (Developer tools)/Network/Reload/Copy as curl while accessing the VOO webui. (If this is completely mysterious to you, this beta software might not be a satisfying experience for you.) 
+Compared to the version of Jack, it hammers the modem every 15 minutes. It possibly needs you to update the curl command around line 815 and 1044 of belmon in /jffs/scripts, and paste the tokens for PHP session and authentication (also in CSRF). I got them with F12 (Developer tools)/Network/Reload/Copy as curl while accessing the VOO webui. (If this is completely mysterious to you, this beta software might not be a satisfying experience for you.) 
 
-modmon voo is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
+belmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
-If you have yet another modem, you can also look at the branch https://github.com/waluwaz/modmon/tree/Example-of-minimum-changes-for-new-modem-support (or version 0.1 in master). It's an example of a simple dirty approach at supporting another modem, roguely sticking new metrics in the original 6 metrics of modmon.
-Since version 0.2, this is customized to use its own framework of 7 metrics, in line with what's available from the VOO modem.
+If you have yet another modem, you can also look at the branch https://github.com/waluwaz/belmon/tree/Example-of-minimum-changes-for-new-modem-support (or version 0.1 in master). It's an example of a simple dirty approach at supporting another modem, roguely sticking new metrics in the original 6 metrics of modmon.
+Since version 0.2, this is customized to use its own set of 7 metrics, in line with what's available from the VOO modem.
 
 ### Supporting development
-Love the script ? Any and all donations gratefully sent to JackYaz who did 100% of the work for the original modmon, which means 95% of the work for this. For more reliability, please navigate to Jack's repo and click Paypal from his repo. If you insist on supporting "me", please do send the money to your favourite charity.
+If you have good experience with the script, share the word at https://forum.adsl-bc.org/viewforum.php?f=58 or https://www.snbforums.com/forums/asuswrt-merlin-addons.60/ for instance.
+Temporarily, you could also PM me.
 
 ## Recommended firmware versions
 You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asuswrt-Merlin](https://www.asuswrt-merlin.net/)
@@ -24,35 +25,36 @@ You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asu
 ## Installation
 WARNING: 
 This addon doesn't have a community of testers. I don't have the skills of regular addon writers. Use at your own risk.
-If you don't have a backup router, remember that you're risking the stability of a critical piece of your infrastructure, with mostly unsupported/untested software. 
+If you don't have a backup router, remember that you're risking the stability of a critical piece of your infrastructure, with mostly unsupported/untested software. (The fact that I apparently never "broke" my router doesn't guarantee yours will be safe. )
 Moreover, information might be power, but the addon is unlikely to inform you of anything that you will have direct control on.
 Indirectly, charts and figures might help you convincing your ISP to seriously adress issues though, if you do experience issues (e.g. excessive packet drops).
 
-If you do have the original modmon, installing this will wipe the original modmon file in /jffs/scripts and .asp file in /jffs/addons/modmon.d. It will also add tables in the database. It will replace the original both for the commond-line interface, and in the webUI.
+I have made an attempt to allow coexistence of modmon and belmon (even though there is probably no point to run both).
+If you do have the original modmon, there is still a chance/risk that they will interfere with each other. 
 
 So, if you still want to install...
 
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```sh
-/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/waluwaz/modmon/master/modmon.sh" -o "/jffs/scripts/modmon" && chmod 0755 /jffs/scripts/modmon && /jffs/scripts/modmon install
+/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/waluwaz/belmon/master/belmon.sh" -o "/jffs/scripts/belmon" && chmod 0755 /jffs/scripts/belmon && /jffs/scripts/belmon install
 ```
 
 If it doesn't work, consider adapting the script to an active session. See above. This modification might have to be renewed, e.g. if the modem reboots for instance. If it still doesn't work, you could test another add-on from JackYaz. There might be some prerequisites that I forgot to mention.
 
 ## Usage
 ### WebUI
-modmon can be configured via the WebUI, in the Addons section. I recommend you use USB and not JFFS, in those settings. See the statement from RMerlin at https://github.com/RMerl/asuswrt-merlin.ng/wiki/JFFS.
+belmon can be configured via the WebUI, in the Addons section. I recommend you use USB and not JFFS, in those settings. See the statement from RMerlin at https://github.com/RMerl/asuswrt-merlin.ng/wiki/JFFS.
 
 ### Command Line
-To launch the modmon menu after installation, use:
+To launch the belmon menu after installation, use:
 ```sh
-modmon
+belmon
 ```
 
 If this does not work, you will need to use the full path:
 ```sh
-/jffs/scripts/modmon
+/jffs/scripts/belmon
 ```
 
 ## Screenshots
