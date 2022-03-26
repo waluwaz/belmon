@@ -481,7 +481,7 @@ function RedrawAllCharts(){
 	for(var i = 0; i < metriclist.length; i++){
 		Draw_Chart_NoData(metriclist[i],'Data loading...');
 		for(var i2 = 0; i2 < chartlist.length; i2++){
-			d3.csv('/ext/modmon/csv/'+metriclist[i]+'_'+chartlist[i2]+'.htm').then(ProcessChart.bind(null,i,i2));
+			d3.csv('/ext/belmon/csv/'+metriclist[i]+'_'+chartlist[i2]+'.htm').then(ProcessChart.bind(null,i,i2));
 		}
 	}
 }
@@ -569,12 +569,12 @@ $j.fn.serializeObject = function(){
 	var o = custom_settings;
 	var a = this.serializeArray();
 	$j.each(a,function(){
-		if(o[this.name] !== undefined && this.name.indexOf('modmon') != -1 && this.name.indexOf('version') == -1){
+		if(o[this.name] !== undefined && this.name.indexOf('belmon') != -1 && this.name.indexOf('version') == -1){
 			if(!o[this.name].push){
 				o[this.name] = [o[this.name]];
 			}
 			o[this.name].push(this.value || '');
-		} else if(this.name.indexOf('modmon') != -1 && this.name.indexOf('version') == -1){
+		} else if(this.name.indexOf('belmon') != -1 && this.name.indexOf('version') == -1){
 			o[this.name] = this.value || '';
 		}
 	});
@@ -611,12 +611,12 @@ function initial(){
 function ScriptUpdateLayout(){
 	var localver = GetVersionNumber('local');
 	var serverver = GetVersionNumber('server');
-	$j('#modmon_version_local').text(localver);
+	$j('#belmon_version_local').text(localver);
 	
 	if(localver != serverver && serverver != 'N/A'){
-		$j('#modmon_version_server').text('Updated version available: '+serverver);
+		$j('#belmon_version_server').text('Updated version available: '+serverver);
 		showhide('btnChkUpdate',false);
-		showhide('modmon_version_server',true);
+		showhide('belmon_version_server',true);
 		showhide('btnDoUpdate',true);
 	}
 }
@@ -682,13 +682,13 @@ function ToggleDragZoom(button){
 }
 
 function ExportCSV(){
-	location.href = '/ext/modmon/csv/modmondata.zip';
+	location.href = '/ext/belmon/csv/belmondata.zip';
 	return 0;
 }
 
 function update_status(){
 	$j.ajax({
-		url: '/ext/modmon/detect_update.js',
+		url: '/ext/belmon/detect_update.js',
 		dataType: 'script',
 		error: function(xhr){
 			setTimeout(update_status,1000);
@@ -699,14 +699,14 @@ function update_status(){
 			}
 			else{
 				document.getElementById('imgChkUpdate').style.display = 'none';
-				showhide('modmon_version_server',true);
+				showhide('belmon_version_server',true);
 				if(updatestatus != 'None'){
-					$j('#modmon_version_server').text('Updated version available: '+updatestatus);
+					$j('#belmon_version_server').text('Updated version available: '+updatestatus);
 					showhide('btnChkUpdate',false);
 					showhide('btnDoUpdate',true);
 				}
 				else{
-					$j('#modmon_version_server').text('No update available');
+					$j('#belmon_version_server').text('No update available');
 					showhide('btnChkUpdate',true);
 					showhide('btnDoUpdate',false);
 				}
@@ -717,14 +717,14 @@ function update_status(){
 
 function CheckUpdate(){
 	showhide('btnChkUpdate',false);
-	document.formScriptActions.action_script.value='start_modmoncheckupdate'
+	document.formScriptActions.action_script.value='start_belmoncheckupdate'
 	document.formScriptActions.submit();
 	document.getElementById('imgChkUpdate').style.display = '';
 	setTimeout(update_status,2000);
 }
 
 function DoUpdate(){
-	document.form.action_script.value = 'start_modmondoupdate';
+	document.form.action_script.value = 'start_belmondoupdate';
 	document.form.action_wait.value = 10;
 	showLoading();
 	document.form.submit();
@@ -759,7 +759,7 @@ function Format_Number_Setting(forminput){
 
 function Validate_All(){
 	var validationfailed = false;
-	if(! Validate_Number_Setting(document.form.modmon_daystokeep,365,10)){validationfailed=true;}
+	if(! Validate_Number_Setting(document.form.belmon_daystokeep,365,10)){validationfailed=true;}
 	
 	if(validationfailed){
 		alert('Validation for some fields failed. Please correct invalid values and try again.');
@@ -773,7 +773,7 @@ function Validate_All(){
 function SaveConfig(){
 	if(Validate_All()){
 		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject())
-		document.form.action_script.value = 'start_modmonconfig';
+		document.form.action_script.value = 'start_belmonconfig';
 		document.form.action_wait.value = 5;
 		showLoading();
 		document.form.submit();
@@ -785,25 +785,25 @@ function SaveConfig(){
 
 function update_modtest(){
 	$j.ajax({
-		url: '/ext/modmon/detect_modmon.js',
+		url: '/ext/belmon/detect_belmon.js',
 		dataType: 'script',
 		error: function(xhr){
 			setTimeout(update_modtest,1000);
 		},
 		success: function(){
-			if(modmonstatus == 'InProgress'){
+			if(belmonstatus == 'InProgress'){
 				setTimeout(update_modtest,1000);
 			}
-			else if(modmonstatus == 'GenerateCSV'){
+			else if(belmonstatus == 'GenerateCSV'){
 				document.getElementById('modupdate_text').innerHTML = 'Retrieving data for charts...';
 				setTimeout(update_modtest,1000);
 			}
-			else if(modmonstatus == 'LOCKED'){
+			else if(belmonstatus == 'LOCKED'){
 				showhide('imgModUpdate',false);
 				document.getElementById('modupdate_text').innerHTML = 'Scheduled stat update already running!';
 				showhide('btnUpdateStats',true);
 			}
-			else if(modmonstatus == 'Done'){
+			else if(belmonstatus == 'Done'){
 				document.getElementById('modupdate_text').innerHTML = 'Refreshing charts...';
 				PostModUpdate();
 			}
@@ -834,7 +834,7 @@ function ResetLayout(){
 
 function UpdateStats(){
 	showhide('btnUpdateStats',false);
-	document.formScriptActions.action_script.value = 'start_modmon';
+	document.formScriptActions.action_script.value = 'start_belmon';
 	document.formScriptActions.submit();
 	document.getElementById('modupdate_text').innerHTML = 'Retrieving VOO stats';
 	showhide('imgModUpdate',true);
@@ -845,10 +845,10 @@ function UpdateStats(){
 function GetVersionNumber(versiontype){
 	var versionprop;
 	if(versiontype == 'local'){
-		versionprop = custom_settings.modmon_version_local;
+		versionprop = custom_settings.belmon_version_local;
 	}
 	else if(versiontype == 'server'){
-		versionprop = custom_settings.modmon_version_server;
+		versionprop = custom_settings.belmon_version_server;
 	}
 	
 	if(typeof versionprop == 'undefined' || versionprop == null){
@@ -861,7 +861,7 @@ function GetVersionNumber(versiontype){
 
 function get_conf_file(){
 	$j.ajax({
-		url: '/ext/modmon/config.htm',
+		url: '/ext/belmon/config.htm',
 		dataType: 'text',
 		error: function(xhr){
 			setTimeout(get_conf_file,1000);
@@ -871,7 +871,7 @@ function get_conf_file(){
 			configdata = configdata.filter(Boolean);
 			
 			for(var i = 0; i < configdata.length; i++){
-				eval('document.form.modmon_'+configdata[i].split('=')[0].toLowerCase()).value = configdata[i].split('=')[1].replace(/(\r\n|\n|\r)/gm,'');
+				eval('document.form.belmon_'+configdata[i].split('=')[0].toLowerCase()).value = configdata[i].split('=')[1].replace(/(\r\n|\n|\r)/gm,'');
 			}
 		}
 	});
@@ -879,7 +879,7 @@ function get_conf_file(){
 
 function get_statstitle_file(){
 	$j.ajax({
-		url: '/ext/modmon/modstatstext.js',
+		url: '/ext/belmon/modstatstext.js',
 		dataType: 'script',
 		error: function(xhr){
 			setTimeout(get_statstitle_file,1000);
@@ -892,7 +892,7 @@ function get_statstitle_file(){
 
 function get_modemlogs_file(){
 	$j.ajax({
-		url: '/ext/modmon/modlogs.htm',
+		url: '/ext/belmon/modlogs.htm',
 		dataType: 'text',
 		error: function(xhr){
 			setTimeout(get_modemlogs_file,1000);
