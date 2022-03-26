@@ -1,14 +1,14 @@
 #!/bin/sh
 
 ############################################################
-##                          _                             ##
-##                         | |                            ##
-##    _ __ ___    ___    __| | _ __ ___    ___   _ __     ##
-##   | '_ ` _ \  / _ \  / _` || '_ ` _ \  / _ \ | '_ \    ##
-##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##
-##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##
+##   ___.            .__                                  ##
+##   \_ |__    ____  |  |    _____    ____    ____        ##
+##    | __ \ _/ __ \ |  |   /     \  /  _ \  /    \       ##
+##    | \_\ \\  ___/ |  |__|  Y Y  \(  <_> )|   |  \      ##
+##    |___  / \___  >|____/|__|_|  / \____/ |___|  /      ##
+##        \/      \/             \/              \/       ##
 ##                                                        ##
-##           https://github.com/waluwaz/modmon            ##
+##           https://github.com/waluwaz/belmon            ##
 ##                                                        ##
 ############################################################
 
@@ -23,7 +23,7 @@
 ############################################################
 
 ### Start of script variables ###
-readonly SCRIPT_NAME="modmon"
+readonly SCRIPT_NAME="belmon"
 readonly SCRIPT_VERSION="v0.4.0-beta"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/waluwaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
@@ -79,7 +79,7 @@ Check_Lock(){
 				exit 1
 			else
 				if [ "$1" = "webui" ]; then
-					echo 'var modmonstatus = "LOCKED";' > /tmp/detect_modmon.js
+					echo 'var belmonstatus = "LOCKED";' > /tmp/detect_belmon.js
 					exit 1
 				fi
 				return 1
@@ -103,28 +103,28 @@ Set_Version_Custom_Settings(){
 	case "$1" in
 		local)
 			if [ -f "$SETTINGSFILE" ]; then
-				if [ "$(grep -c "modmon_version_local" $SETTINGSFILE)" -gt 0 ]; then
-					if [ "$2" != "$(grep "modmon_version_local" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
-						sed -i "s/modmon_version_local.*/modmon_version_local $2/" "$SETTINGSFILE"
+				if [ "$(grep -c "belmon_version_local" $SETTINGSFILE)" -gt 0 ]; then
+					if [ "$2" != "$(grep "belmon_version_local" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
+						sed -i "s/belmon_version_local.*/belmon_version_local $2/" "$SETTINGSFILE"
 					fi
 				else
-					echo "modmon_version_local $2" >> "$SETTINGSFILE"
+					echo "belmon_version_local $2" >> "$SETTINGSFILE"
 				fi
 			else
-				echo "modmon_version_local $2" >> "$SETTINGSFILE"
+				echo "belmon_version_local $2" >> "$SETTINGSFILE"
 			fi
 		;;
 		server)
 			if [ -f "$SETTINGSFILE" ]; then
-				if [ "$(grep -c "modmon_version_server" $SETTINGSFILE)" -gt 0 ]; then
-					if [ "$2" != "$(grep "modmon_version_server" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
-						sed -i "s/modmon_version_server.*/modmon_version_server $2/" "$SETTINGSFILE"
+				if [ "$(grep -c "belmon_version_server" $SETTINGSFILE)" -gt 0 ]; then
+					if [ "$2" != "$(grep "belmon_version_server" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
+						sed -i "s/belmon_version_server.*/belmon_version_server $2/" "$SETTINGSFILE"
 					fi
 				else
-					echo "modmon_version_server $2" >> "$SETTINGSFILE"
+					echo "belmon_version_server $2" >> "$SETTINGSFILE"
 				fi
 			else
-				echo "modmon_version_server $2" >> "$SETTINGSFILE"
+				echo "belmon_version_server $2" >> "$SETTINGSFILE"
 			fi
 		;;
 	esac
@@ -175,7 +175,7 @@ Update_Version(){
 				y|Y)
 					printf "\\n"
 					Update_File shared-jy.tar.gz
-					Update_File modmonstats_www.asp
+					Update_File belmonstats_www.asp
 					/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated"
 					chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 					Set_Version_Custom_Settings local "$serverver"
@@ -201,7 +201,7 @@ Update_Version(){
 		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		Print_Output true "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
 		Update_File shared-jy.tar.gz
-		Update_File modmonstats_www.asp
+		Update_File belmonstats_www.asp
 		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated"
 		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 		Set_Version_Custom_Settings local "$serverver"
@@ -218,7 +218,7 @@ Update_Version(){
 }
 
 Update_File(){
-	if [ "$1" = "modmonstats_www.asp" ]; then
+	if [ "$1" = "belmonstats_www.asp" ]; then
 		tmpfile="/tmp/$1"
 		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
 		if [ -f "$SCRIPT_DIR/$1" ]; then
@@ -269,20 +269,20 @@ Validate_Number(){
 
 Conf_FromSettings(){
 	SETTINGSFILE="/jffs/addons/custom_settings.txt"
-	TMPFILE="/tmp/modmon_settings.txt"
+	TMPFILE="/tmp/belmon_settings.txt"
 	if [ -f "$SETTINGSFILE" ]; then
-		if [ "$(grep "modmon_" $SETTINGSFILE | grep -v "version" -c)" -gt 0 ]; then
+		if [ "$(grep "belmon_" $SETTINGSFILE | grep -v "version" -c)" -gt 0 ]; then
 			Print_Output true "Updated settings from WebUI found, merging into $SCRIPT_CONF" "$PASS"
 			cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
-			grep "modmon_" "$SETTINGSFILE" | grep -v "version" > "$TMPFILE"
-			sed -i "s/modmon_//g;s/ /=/g" "$TMPFILE"
+			grep "belmon_" "$SETTINGSFILE" | grep -v "version" > "$TMPFILE"
+			sed -i "s/belmon_//g;s/ /=/g" "$TMPFILE"
 			while IFS='' read -r line || [ -n "$line" ]; do
 				SETTINGNAME="$(echo "$line" | cut -f1 -d'=' | awk '{ print toupper($1) }')"
 				SETTINGVALUE="$(echo "$line" | cut -f2 -d'=')"
 				sed -i "s~$SETTINGNAME=.*~$SETTINGNAME=$SETTINGVALUE~" "$SCRIPT_CONF"
 			done < "$TMPFILE"
-			grep 'modmon_version' "$SETTINGSFILE" > "$TMPFILE"
-			sed -i "\\~modmon_~d" "$SETTINGSFILE"
+			grep 'belmon_version' "$SETTINGSFILE" > "$TMPFILE"
+			sed -i "\\~belmon_~d" "$SETTINGSFILE"
 			mv "$SETTINGSFILE" "$SETTINGSFILE.bak"
 			cat "$SETTINGSFILE.bak" "$TMPFILE" > "$SETTINGSFILE"
 			rm -f "$TMPFILE"
@@ -328,7 +328,7 @@ Create_Dirs(){
 Create_Symlinks(){
 	rm -rf "${SCRIPT_WEB_DIR:?}/"* 2>/dev/null
 	
-	ln -s /tmp/detect_modmon.js "$SCRIPT_WEB_DIR/detect_modmon.js" 2>/dev/null
+	ln -s /tmp/detect_belmon.js "$SCRIPT_WEB_DIR/detect_belmon.js" 2>/dev/null
 	ln -s "$SCRIPT_STORAGE_DIR/modlogs.csv"  "$SCRIPT_WEB_DIR/modlogs.htm" 2>/dev/null
 	ln -s "$SCRIPT_STORAGE_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
@@ -437,12 +437,7 @@ Auto_Startup(){
 }
 
 
-# The original modmon of JackYaz monitored the modem every 30 minutes. 
-# Note how the scheduling targetted minute 15 and 46, while spdMerlin targetted 12 and 42, so avoiding overlap.
-# For the CGA4233 of VOO, the session timeout of the WEBUI closes the connection after 5 minutes.
-# As I don't know how to reauthenticate, I hammer the modem every 3 minutes or so to ensure that the session stays open.
-# See cru statement below, starting with */3 for the settings applyed to the minutes 
-# Additionnally, at my adress, I had fast power changes, hence the desirability for frequent updates, much more frequent tha every 30 minutes.
+# The modmon of JackYaz monitored the modem every 30 minutes. belmon is triggered every 15 minutes, giving more chances to capture instability.
 Auto_Cron(){
 	case $1 in
 		create)
@@ -518,13 +513,13 @@ Mount_WebUI(){
 	FD=386
 	eval exec "$FD>$LOCKFILE"
 	flock -x "$FD"
-	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
+	Get_WebUI_Page "$SCRIPT_DIR/belmonstats_www.asp"
 	if [ "$MyPage" = "none" ]; then
 		Print_Output true "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
 		flock -u "$FD"
 		return 1
 	fi
-	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	cp -f "$SCRIPT_DIR/belmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	echo "$SCRIPT_NAME" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
 	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
@@ -761,44 +756,31 @@ Get_Modem_Stats(){
 	shstatsfile_dst="/tmp/shstats_dst.csv"
 	shstatsfile_ust="/tmp/shstats_ust.csv"
 
-# The original version tracks 6 metrics. 
+# The original version tracks 6 metrics. Note that the Rx/Tx prefix is later used to group metrics.
 # Every metrics gets a dedicated SQL table
 # Each table has the same structure
-# Metrics are processed one at a time: a file is created with all INSERT SQL statements for that metric (/tmp/modmon-stats.sql). 
+# Metrics are processed one at a time: a file is created with all INSERT SQL statements for that metric (/tmp/belmon-stats.sql). 
 # When the file for one metric is ready, it is executed as SQL to actually populate the relevant table.
 # Subsequently, the same table is "purged" from old records, based on the retention period
 # Finally, the text file with the INSERT statements is deleted
-
-
-
+# The "documentation" folder in github provides some examples.
 
 #	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 
-# It appears that those very metric's name might be expected by other parts of the solution:
+# FYI: It appears that those very metric's name might be expected by other parts of modmon:
 # for instance: SELECT [Timestamp] FROM modstats_RxPwr
-# In this branch, I will try to fully adapt the code to metrics for VOO
-# The metrics could be mapped as follows (modmon's metrics left, VOO metrics right. Note that some VOO names are not unique (i.e. shared netween Tx and Rx) 
-# 				"ChannelID": "10",
-# Frequency		       "Frequency": "522 MHz",
-# RxPwr & TxPwr OK:        "PowerLevel": "-4.8 dBmV",
-# RxSnr			        "SNRLevel": "38.3 dB",
-#        				"Modulation": "256-QAM",
-# Octets       				"Octets": "772717700",
-# Correcteds		        "Correcteds": "248675",
-# Uncorrectables	        "Uncorrectables": "9629",
-#        "LockStatus": "Locked",
-#        "ChannelType": "SC-QAM"
+# Similarly, for belmon, e.g. the chart appearance is different for the metric RxFreq
 	
-	echo 'var modmonstatus = "InProgress";' > /tmp/detect_modmon.js
+	echo 'var belmonstatus = "InProgress";' > /tmp/detect_belmon.js
 	
 	Process_Upgrade
 
 # See https://www.gnu.org/software/sed/manual/html_node/The-_0022s_0022-Command.html
-# The original target modem produces a file with one value per line, like
+# The original target modem for modmon produces a file with one value per line, like
 #	"1.3.6.1.2.1.10.127.1.1.4.1.3.2":"1791416",
 # The values in the file are identified by numbers, as per the concept of OIDs in SNMP (https://www.dpstele.com/snmp/what-does-oid-network-elements.php)
-# The code below replaces the OID numbers by the name of the metrics (among the 6 defined above, plus some more which are not used any further)
+# The code below replaces the OID numbers by the name of the metrics (among the 7 defined above, plus some more which are not used any further)
 # It then only keeps the lines that start with letters, i.e. the ones that have received a metric name (with letters) instead of the SNMP OID (with digits).
 # The processing also does additional processing to globally prepare the text 
 # Ultimately, this produces a file, $shstatsfile
@@ -811,7 +793,7 @@ Get_Modem_Stats(){
 
 
 #	The API call to feed the standard webpage in the standard admin UI, requests 5 items (exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl).
-#	The curl call o nly request the 2 items from which data gets really extracted. Note that exUSTbl and exDSTbl are seemingly always empty.
+#	The curl call only request the 2 items from which data gets really extracted. Note that exUSTbl and exDSTbl are seemingly always empty anyway.
 #	Note that ErrTbl seems to have data that is also available in another item.  
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
 
@@ -836,9 +818,9 @@ rm -f "$shstatsfile_ust"
 # If the file is not empty, it is processed, each of the 6 or 7 metric in turn	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
-			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
-			rm -f /tmp/modmon-stats.sql
+			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/belmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
+			rm -f /tmp/belmon-stats.sql
 			
 			channelcount="$(grep -c "$metric" $shstatsfile)"    # one counts the number of lines for the current metric
 			
@@ -854,35 +836,36 @@ rm -f "$shstatsfile_ust"
 				if [ $metric = TxPwr ]; then channel="$(grep TxChannelID $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
 				fi
 
-				# The tables receives values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
+				# In modmon, the tables receive values for the SQL ChannelNum SQL field. The values range from 1 to the count of channels 
 				# This is not very suitable for my case where the modem reports values for a varying set of 16 channels; 
 				# among a total of 20 physical channels (from 1 to 22, not including 17 and 18)
-				# For the VOO modem, a vector with the applicable channel numbers/IDs should be first prepared,
+				# For the VOO modem, a vector with the applicable channel numbers/IDs should be managed,
 				# in order to subsequently feed the database with the applicable channel number/ID.
-				# Note that, as a first step, sticking values in pseudo channels 1 to 16 would be good enough
+				# Note that, as a first step, sticking values in pseudo channels 1 to 16 was good enough for belmon v0.1.0-alpha
 
 				# For Corrected, Uncorrectable and Octets, the VOO modem seems to sometimes report a count of zero for channel zero...
 				# Note that this happened only once over a few days. It happened only for those 3 metrics. 
 				# It happened at the very same timestamp for all 3 metrics.
 				# https://192.168.17.1:8443/ext/modmon/csv/RxOctets_weekly.htm
 				# Channel,Time,Value "Ch. 0",1647659701,0.0 "Ch. 1",1647883860,3041822933.0 "Ch. 1",
-				if [ $channel -ge 1 ]; then echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$channel,$measurement);" >> /tmp/modmon-stats.sql
+				# the code below filters out channel 0
+				if [ $channel -ge 1 ]; then echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$channel,$measurement);" >> /tmp/belmon-stats.sql
 				fi
 				counter=$((counter + 1))
 			done
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 			
 			{
 				echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'));"
 				echo "PRAGMA analysis_limit=0;"
 				echo "PRAGMA cache_size=-20000;"
 				echo "ANALYZE modstats_$metric;"
-			} > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql >/dev/null 2>&1
-			rm -f /tmp/modmon-stats.sql
+			} > /tmp/belmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql >/dev/null 2>&1
+			rm -f /tmp/belmon-stats.sql
 		done
 		
-		echo 'var modmonstatus = "GenerateCSV";' > /tmp/detect_modmon.js
+		echo 'var belmonstatus = "GenerateCSV";' > /tmp/detect_belmon.js
 		Generate_CSVs
 		
 		Generate_Modem_Logs
@@ -893,10 +876,10 @@ rm -f "$shstatsfile_ust"
 		rm -f /tmp/modstatstitle.txt
 		Print_Output true "Cable modem stats successfully retrieved" "$PASS"
 		
-		echo 'var modmonstatus = "Done";' > /tmp/detect_modmon.js
+		echo 'var belmonstatus = "Done";' > /tmp/detect_belmon.js
 	else
 		Print_Output true "Something went wrong trying to retrieve cable modem stats" "$ERR"
-		echo 'var modmonstatus = "ERROR";' > /tmp/detect_modmon.js
+		echo 'var belmonstatus = "ERROR";' > /tmp/detect_belmon.js
 	fi
 	
 	rm -f "$shstatsfile"
@@ -934,8 +917,8 @@ Generate_CSVs(){
 			echo ".headers on"
 			echo ".output $CSV_OUTPUT_DIR/${metric}_daily.htm"
 			echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-1 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
-		} > /tmp/modmon-stats.sql
-		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+		} > /tmp/belmon-stats.sql
+		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 		
 		if [ "$OUTPUTDATAMODE" = "raw" ]; then
 			{
@@ -943,22 +926,22 @@ Generate_CSVs(){
 				echo ".headers on"
 				echo ".output $CSV_OUTPUT_DIR/${metric}_weekly.htm"
 				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-7 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
-			} > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			} > /tmp/belmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 			
 			{
 				echo ".mode csv"
 				echo ".headers on"
 				echo ".output $CSV_OUTPUT_DIR/${metric}_monthly.htm"
 				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-30 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
-			} > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			} > /tmp/belmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 		elif [ "$OUTPUTDATAMODE" = "average" ]; then
-			WriteSql_ToFile Measurement "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" weekly /tmp/modmon-stats.sql "$timenow"
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			WriteSql_ToFile Measurement "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" weekly /tmp/belmon-stats.sql "$timenow"
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 			
-			WriteSql_ToFile Measurement "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" monthly /tmp/modmon-stats.sql "$timenow"
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			WriteSql_ToFile Measurement "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" monthly /tmp/belmon-stats.sql "$timenow"
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 		fi
 		rm -f "$CSV_OUTPUT_DIR/${metric}daily.htm"
 		rm -f "$CSV_OUTPUT_DIR/${metric}weekly.htm"
@@ -966,39 +949,39 @@ Generate_CSVs(){
 	}
 	done
 	
-	rm -f /tmp/modmon-stats.sql
+	rm -f /tmp/belmon-stats.sql
 	
 	{
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxTimes.htm"
 		echo "SELECT [Timestamp] FROM modstats_RxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
-	} > /tmp/modmon-complete.sql
-	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	} > /tmp/belmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-complete.sql
 	
 	{
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxTimes.htm"
 		echo "SELECT [Timestamp] FROM modstats_TxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
-	} > /tmp/modmon-complete.sql
-	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	} > /tmp/belmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-complete.sql
 	
 	{
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxChannels.htm"
 		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
-	} > /tmp/modmon-complete.sql
-	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	} > /tmp/belmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-complete.sql
 	
 	{
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxChannels.htm"
 		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
-	} > /tmp/modmon-complete.sql
-	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	} > /tmp/belmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-complete.sql
 	
 #	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
@@ -1008,11 +991,11 @@ Generate_CSVs(){
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_$metric.htm"
 		echo "SELECT [Measurement] $metric FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
-	} > /tmp/modmon-complete.sql
-	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	} > /tmp/belmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-complete.sql
 	done
 	
-	rm -f /tmp/modmon-complete.sql
+	rm -f /tmp/belmon-complete.sql
 	
 	dos2unix /tmp/*.htm
 	
@@ -1093,10 +1076,10 @@ Reset_DB(){
 #		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
 		for metric in $metriclist; do
-			echo "DELETE FROM [modstats_$metric];" > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			echo "DELETE FROM [modstats_$metric];" > /tmp/belmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 		done
-		rm -f /tmp/modmon-stats.sql
+		rm -f /tmp/belmon-stats.sql
 			
 		Print_Output true "Database reset complete" "$WARN"
 	fi
@@ -1110,16 +1093,16 @@ Process_Upgrade(){
 #		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"		
 		for metric in $metriclist; do
-			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/modmon-upgrade.sql
-			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
+			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/belmon-upgrade.sql
+			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-upgrade.sql >/dev/null 2>&1; do
 				sleep 1
 			done
-			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_channel_measurement ON [modstats_$metric] (ChannelNum,Measurement);" > /tmp/modmon-upgrade.sql
-			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
+			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_channel_measurement ON [modstats_$metric] (ChannelNum,Measurement);" > /tmp/belmon-upgrade.sql
+			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-upgrade.sql >/dev/null 2>&1; do
 				sleep 1
 			done
 		done
-		rm -f /tmp/modmon-upgrade.sql
+		rm -f /tmp/belmon-upgrade.sql
 		touch "$SCRIPT_STORAGE_DIR/.indexcreated"
 		Print_Output true "Database ready, continuing..." "$PASS"
 		renice 0 $$
@@ -1162,19 +1145,19 @@ PressEnter(){
 ScriptHeader(){
 	clear
 	printf "\\n"
-	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
-	printf "${BOLD}##                          _                             ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##                         | |                            ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##    _ __ ___    ___    __| | _ __ ___    ___   _ __     ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##   |  _ \` _ \  / _ \  / _\` ||  _ \` _ \  / _ \ |  _ \    ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##                                   VOO                  ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##                   %s on %-11s                ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
-	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##            https://github.com/waluwaz/modmon           ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
-	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
+	printf "${BOLD}#########################################################${CLEARFORMAT}\\n"
+	printf "${BOLD}##   ___.            .__                               ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##   \_ |__    ____  |  |    _____    ____    ____     ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##    | __ \ _/ __ \ |  |   /     \  /  _ \  /    \    ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##    | \_\ \\  ___/ |  |__|  Y Y  \(  <_> )|   |  \   ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##    |___  / \___  >|____/|__|_|  / \____/ |___|  /   ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##        \/      \/             \/              \/    ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                                     ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                   %s on %-11s                       ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
+	printf "${BOLD}##                                                     ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##        https://github.com/waluwaz/belmon            ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                                     ##${CLEARFORMAT}\\n"
+	printf "${BOLD}#########################################################${CLEARFORMAT}\\n"
 	printf "\\n"
 }
 
@@ -1372,7 +1355,7 @@ Menu_Install(){
 	ScriptStorageLocation load
 	Create_Symlinks
 	
-	Update_File modmonstats_www.asp
+	Update_File belmonstats_www.asp
 	Update_File shared-jy.tar.gz
 	
 	Auto_Startup create 2>/dev/null
@@ -1384,10 +1367,10 @@ Menu_Install(){
 	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"	
 	
 	for metric in $metriclist; do
-		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
-		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/belmon-stats.sql
+		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 	done
-	rm -f /tmp/modmon-stats.sql
+	rm -f /tmp/belmon-stats.sql
 	
 	touch "$SCRIPT_STORAGE_DIR/modlogs.csv"
 	Process_Upgrade
@@ -1462,7 +1445,7 @@ Menu_Uninstall(){
 	FD=386
 	eval exec "$FD>$LOCKFILE"
 	flock -x "$FD"
-	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
+	Get_WebUI_Page "$SCRIPT_DIR/belmonstats_www.asp"
 	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f /tmp/menuTree.js ]; then
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
 		umount /www/require/modules/menuTree.js
@@ -1471,7 +1454,7 @@ Menu_Uninstall(){
 		rm -f "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	fi
 	flock -u "$FD"
-	rm -f "$SCRIPT_DIR/modmonstats_www.asp" 2>/dev/null
+	rm -f "$SCRIPT_DIR/belmonstats_www.asp" 2>/dev/null
 	rm -rf "$SCRIPT_WEB_DIR" 2>/dev/null
 	printf "\\n${BOLD}Do you want to delete %s stats? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
 	read -r confirm
@@ -1485,8 +1468,8 @@ Menu_Uninstall(){
 		;;
 	esac
 	SETTINGSFILE="/jffs/addons/custom_settings.txt"
-	sed -i '/modmon_version_local/d' "$SETTINGSFILE"
-	sed -i '/modmon_version_server/d' "$SETTINGSFILE"
+	sed -i '/belmon_version_local/d' "$SETTINGSFILE"
+	sed -i '/belmon_version_server/d' "$SETTINGSFILE"
 	rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
 	Clear_Lock
 	Print_Output true "Uninstall completed" "$PASS"
@@ -1627,7 +1610,7 @@ case "$1" in
 	;;
 	service_event)
 		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
-			rm -f /tmp/detect_modmon.js
+			rm -f /tmp/detect_belmon.js
 			Check_Lock webui
 			sleep 3
 			Get_Modem_Stats
