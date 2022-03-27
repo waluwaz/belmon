@@ -2,13 +2,13 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/waluwaz/belmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=waluwaz/belmon&amp;utm_campaign=Badge_Grade)
 ![Shellcheck](https://github.com/waluwaz/belmon/actions/workflows/shellcheck.yml/badge.svg)
 
-## v0.5.1-beta
+## v0.6.0-beta
 ### Updated on 2022-03-25
 ## About
 belmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. 
 It is mostly identical to modmon created by JackYaz. However, belmon is customized for another modem, the Technicolor CGA4233 installed by VOO to its customers in Belgium. 
 
-Compared to the version of Jack, it hammers the modem every 15 minutes. It possibly needs you to update the curl command around line 815 and 1044 of belmon in /jffs/scripts, and paste the tokens for PHP session and authentication (also in CSRF). I got them with F12 (Developer tools)/Network/Reload/Copy as curl while accessing the VOO webui. (If this is completely mysterious to you, this beta software might not be a satisfying experience for you.) 
+Compared to the version of Jack, it queries the modem every 15 minutes. Its installation is tedious, see below. If this is completely mysterious to you, this beta software might not be a satisfying experience for you.
 
 belmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
@@ -40,7 +40,16 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 /usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/waluwaz/belmon/master/belmon.sh" -o "/jffs/scripts/belmon" && chmod 0755 /jffs/scripts/belmon && /jffs/scripts/belmon install
 ```
 
-If it doesn't work, consider adapting the script to an active session. See above. This modification might have to be renewed, e.g. if the modem reboots for instance. If it still doesn't work, you could test another add-on from JackYaz. There might be some prerequisites that I forgot to mention.
+WARNING: It will almost certainly not work, and not collect any stats at first. So, you will need to modify the belmon file in /jffs/scripts. You could use vi on the router. Alternatively, you could edit the file on your usual machine and FTP the file. If you use FTP, note that the file needs to have execute right. "chmod a+x /jffs/scripts/belmon"
+The new content must have customized curl commands targetting your modem, for instance at 192.168.100.1, with the custom authentication information.
+Those curl commands are currently located around line 798 and 1047 in the script (as of V0.5.1-beta).
+
+You can find the target curl command with F12 (Developer tools)/Network/Reload/"Copy as curl" while accessing the VOO webui in a Browser. More specifically, if you access the page about DOCSIS signal, you can filter for JSON requests, or on the "USTbl" string. 
+For belmon around line 798, you should preferably replace the 'curl' keyword in the command provided by the browser, with '/usr/sbin/curl -fs --retry 3 --connect-timeout 15'. You will also need to add at the end of the curl statement: ' > "$shstatsfile_curl"'. Look at the code, you'll get the idea. If you are somewhat versed in scripts, it is probably much easier than it seems. (NB: The curl statement in belmon has been somewhat minimized, removing some unnecessary parameters. It is probably optional. You can probably keep all parameters provided by the browser. )
+
+For line 1047, use a similar curl, but make sure the part after "modem/" refers to 'LogTbl'. Make sure you respect the same start and ending for that line as what you will find in belmon (as of v0.5.1 roughly '/usr/sbin/curl -fs --retry 3 --connect-timeout 15 '     and   '| jq '.data.LogTbl' | sed 's/__id/A__id/' | sed 's/"//g' | sed 's/: /,,/'  > "$shstatsfile_logtbl"')
+
+This modification might have to be renewed, e.g. if the modem reboots for instance (also possibly if you subsequently create a session in the webui in a browser). If it still doesn't work, you could check another add-on from JackYaz. There might be some prerequisites that I forgot to mention (e.g. about the USB stick, formatting etc).
 
 ## Usage
 ### WebUI
