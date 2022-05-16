@@ -3,7 +3,8 @@ var arraysortlistlines = [];
 var sortname = 'Time';
 var sortdir = 'desc';
 
-var maxNoCharts = 18;
+// var maxNoCharts = 18; this is probably based on 6 metrics time 3 periods (daily, weekly, monthly)
+var maxNoCharts = 28; // based on 7 metrics time 4 intervals (incl. quarterly)
 var currentNoCharts = 0;
 var ShowLines = GetCookie('ShowLines','string');
 var DragZoom = true;
@@ -13,9 +14,9 @@ var ChartPan = false;
 var metriclist = ['RxPwr','RxSnr','RxFreq','RxOctets','RxCorr','RxUncor','TxPwr'];
 var titlelist = ['Downstream Power','Downstream SNR','Frequency','Octets','Corrected','Uncorrectable','Upstream Power'];
 var measureunitlist = ['dBmV','dB','MHz','','','','dBmV'];
-var chartlist = ['daily','weekly','monthly'];
-var timeunitlist = ['hour','day','day'];
-var intervallist = [24,7,30];
+var chartlist = ['daily','weekly','monthly', 'quarterly'];
+var timeunitlist = ['hour','day','day', 'day'];
+var intervallist = [24,7,30,90];
 
 var RxCount,TxCount,RxColours,TxColours;
 var chartColours = ['rgba(24,113,65,1)','rgba(205,117,81,1)','rgba(230,55,90,1)','rgba(5,206,61,1)','rgba(131,4,176,1)','rgba(196,145,14,1)','rgba(169,229,70,1)','rgba(25,64,183,1)','rgba(23,153,199,1)','rgba(223,46,248,1)','rgba(240,92,214,1)','rgba(123,137,211,1)','rgba(141,68,215,1)','rgba(74,210,128,1)','rgba(223,247,240,1)','rgba(226,27,93,1)','rgba(253,78,222,1)','rgba(63,192,102,1)','rgba(82,66,162,1)','rgba(65,190,78,1)','rgba(154,113,118,1)','rgba(222,98,201,1)','rgba(198,186,137,1)','rgba(178,45,245,1)','rgba(95,245,50,1)','rgba(247,142,18,1)','rgba(103,152,205,1)','rgba(39,104,180,1)','rgba(132,165,5,1)','rgba(8,249,253,1)','rgba(227,170,207,1)','rgba(196,70,76,1)','rgba(11,197,73,1)','rgba(127,50,202,1)','rgba(33,248,170,1)','rgba(17,216,225,1)','rgba(176,123,12,1)','rgba(181,111,105,1)','rgba(104,122,233,1)','rgba(217,102,107,1)','rgba(188,174,88,1)','rgba(30,224,236,1)','rgba(169,39,247,1)','rgba(251,86,116,1)','rgba(217,163,80,1)','rgba(155,120,34,1)','rgba(82,124,118,1)','rgba(102,89,62,1)','rgba(48,126,7,1)','rgba(48,118,188,1)','rgba(223,246,227,1)','rgba(152,11,129,1)','rgba(66,97,241,1)','rgba(32,113,78,1)','rgba(83,142,226,1)','rgba(210,105,250,1)','rgba(125,115,7,1)','rgba(198,37,71,1)','rgba(253,99,153,1)','rgba(171,225,78,1)','rgba(66,82,121,1)','rgba(5,82,115,1)','rgba(22,62,141,1)','rgba(135,59,161,1)','rgba(20,223,59,1)','rgba(17,206,99,1)','rgba(142,162,133,1)','rgba(206,76,155,1)','rgba(131,87,41,1)','rgba(199,234,37,1)','rgba(176,94,156,1)','rgba(13,58,185,1)','rgba(147,19,178,1)','rgba(48,203,55,1)','rgba(250,31,116,1)','rgba(138,9,168,1)','rgba(90,208,244,1)','rgba(128,110,93,1)','rgba(222,202,95,1)','rgba(189,78,184,1)','rgba(122,41,65,1)','rgba(243,176,73,1)','rgba(23,123,71,1)','rgba(209,50,12,1)','rgba(253,218,100,1)','rgba(214,18,185,1)','rgba(31,254,215,1)','rgba(191,53,224,1)','rgba(117,197,238,1)','rgba(183,123,104,1)','rgba(88,34,248,1)','rgba(124,157,92,1)','rgba(76,59,160,1)','rgba(143,235,139,1)','rgba(59,85,112,1)','rgba(233,54,148,1)','rgba(244,176,124,1)','rgba(246,246,104,1)','rgba(169,171,44,1)','rgba(240,3,14,1)'];
@@ -641,6 +642,7 @@ function getChartPeriod(period){
 	if(period == 0) chartperiod = 'daily';
 	else if(period == 1) chartperiod = 'weekly';
 	else if(period == 2) chartperiod = 'monthly';
+	else if(period == 3) chartperiod = 'quarterly';
 	return chartperiod;
 }
 
@@ -1082,6 +1084,7 @@ function BuildMetricTable(name,title,loopindex){
 	charthtml += '<option value="0">Last 24 hours</option>';
 	charthtml += '<option value="1">Last 7 days</option>';
 	charthtml += '<option value="2">Last 30 days</option>';
+	charthtml += '<option value="3">Last 90 days</option>';
 	charthtml += '</select>';
 	charthtml += '</td>';
 	charthtml += '</tr>';
