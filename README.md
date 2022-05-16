@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/waluwaz/belmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=waluwaz/belmon&amp;utm_campaign=Badge_Grade)
 ![Shellcheck](https://github.com/waluwaz/belmon/actions/workflows/shellcheck.yml/badge.svg)
 
-## v0.6.0-beta
-### Updated on 2022-03-25
+## v0.7.0-beta
+### Updated on 2022-05-16
 ## About
 belmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries. 
 It is mostly identical to modmon created by JackYaz. However, belmon is customized for another modem, the Technicolor CGA4233 installed by VOO to its customers in Belgium. 
