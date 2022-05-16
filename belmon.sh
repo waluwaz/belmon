@@ -795,7 +795,11 @@ Get_Modem_Stats(){
 #	The API call to feed the standard webpage in the standard admin UI, requests 5 items (exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl).
 #	The curl call only request the 2 items from which data gets really extracted. Note that exUSTbl and exDSTbl are seemingly always empty anyway.
 #	Note that ErrTbl seems to have data that is also available in another item.  
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
+
+# Historical sample for reference: 
+#/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
+
+/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7cd07ddf4b09aa7d9449ba3bffe31587' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: PHPSESSID=8t3pan66gps3t559rp101aikt5; lang=fr; auth=7cd07ddf4b09aa7d9449ba3bffe31587'  > "$shstatsfile_curl"
 
 
 # Processing the Rx, DownStream
@@ -936,16 +940,28 @@ Generate_CSVs(){
 				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-30 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
 			} > /tmp/belmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
+
+			{
+				echo ".mode csv"
+				echo ".headers on"
+				echo ".output $CSV_OUTPUT_DIR/${metric}_quarterly.htm"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-90 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
+			} > /tmp/belmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 		elif [ "$OUTPUTDATAMODE" = "average" ]; then
 			WriteSql_ToFile Measurement "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" weekly /tmp/belmon-stats.sql "$timenow"
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 			
 			WriteSql_ToFile Measurement "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" monthly /tmp/belmon-stats.sql "$timenow"
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
+
+			WriteSql_ToFile Measurement "modstats_$metric" 12 90 "$CSV_OUTPUT_DIR/$metric" quarterly /tmp/belmon-stats.sql "$timenow"
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
 		fi
 		rm -f "$CSV_OUTPUT_DIR/${metric}daily.htm"
 		rm -f "$CSV_OUTPUT_DIR/${metric}weekly.htm"
 		rm -f "$CSV_OUTPUT_DIR/${metric}monthly.htm"
+		rm -f "$CSV_OUTPUT_DIR/${metric}quarterly.htm"
 	}
 	done
 	
@@ -1044,7 +1060,7 @@ Generate_Modem_Logs(){
 
 	shstatsfile_logtbl="/tmp/shstats_logtbl.csv"
 
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/LogTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57' | jq '.data.LogTbl' | sed 's/__id/A__id/' | sed 's/"//g' | sed 's/: /,,/'  > "$shstatsfile_logtbl"
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/LogTbl?_=1652035815180' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate' -H 'X-CSRF-TOKEN: 7cd07ddf4b09aa7d9449ba3bffe31587' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Referer: http://192.168.100.1/' -H 'Cookie: PHPSESSID=8t3pan66gps3t559rp101aikt5; lang=fr; auth=7cd07ddf4b09aa7d9449ba3bffe31587' -H 'DNT: 1' -H 'Sec-GPC: 1' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' | jq '.data.LogTbl' | sed 's/__id/A__id/' | sed 's/"//g' | sed 's/: /,,/'  > "$shstatsfile_logtbl"
 
 	logcount="$(grep -c "A__id" $shstatsfile_logtbl)"
 	counter=1
