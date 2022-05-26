@@ -24,7 +24,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="belmon"
-readonly SCRIPT_VERSION="v0.6.1-beta"
+readonly SCRIPT_VERSION="v0.8.0-beta"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/waluwaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -726,6 +726,7 @@ WriteSql_ToFile(){
 }
 
 Get_Modem_Stats(){
+	/usr/sbin/curl -fs -m 10 --retry 5  https://hc-ping.com/adff38c2-c191-4161-830c-44ef1e384f39/start
 	if [ ! -f /opt/bin/xargs ]; then
 		Print_Output true "Installing findutils from Entware"
 		opkg update
@@ -799,8 +800,9 @@ Get_Modem_Stats(){
 # Historical sample for reference: 
 #/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7d298d27f7ede0df78c9292cdca2cd57' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: lang=fr; PHPSESSID=9csugaomqu52rqc6vgul600b91; auth=7d298d27f7ede0df78c9292cdca2cd57'  > "$shstatsfile_curl"
 
-/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7cd07ddf4b09aa7d9449ba3bffe31587' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: PHPSESSID=8t3pan66gps3t559rp101aikt5; lang=fr; auth=7cd07ddf4b09aa7d9449ba3bffe31587'  > "$shstatsfile_curl"
-
+#/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 7cd07ddf4b09aa7d9449ba3bffe31587' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: PHPSESSID=8t3pan66gps3t559rp101aikt5; lang=fr; auth=7cd07ddf4b09aa7d9449ba3bffe31587'  > "$shstatsfile_curl"
+/usr/sbin/curl -fs --retry 3 --connect-timeout 15 'http://192.168.100.1/api/v1/modem/USTbl,DSTbl' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0' -H 'Accept: */*' -H 'X-CSRF-TOKEN: 10177482b9d11e9d9b8b721cc6a25b92' -H 'X-Requested-With: XMLHttpRequest' -H 'Connection: keep-alive' -H 'Cookie: PHPSESSID=8t3pan66gps3t559rp101aikt5; lang=fr; auth=10177482b9d11e9d9b8b721cc6a25b92'  > "$shstatsfile_curl"
+ 
 
 # Processing the Rx, DownStream
 cat "$shstatsfile_curl" | jq '.data.DSTbl' | sed s/ChannelID/RxChannelID/ | sed s/PowerLevel/RxPwr/ | sed s/SNRLevel/RxSnr/ | sed s/Frequency/RxFreq/  | sed s/Octets/RxOctets/ | sed s/Correcteds/RxCorr/  | sed s/Uncorrectables/RxUncor/  | sed s/__id/01Discard/  | sed s/Modulation/03Discard/ | sed s/LockStatus/05Discard/ | sed s/ChannelType/06Discard/ > "$shstatsfile_dst"
@@ -881,6 +883,14 @@ rm -f "$shstatsfile_ust"
 		Print_Output true "Cable modem stats successfully retrieved" "$PASS"
 		
 		echo 'var belmonstatus = "Done";' > /tmp/detect_belmon.js
+
+		# signaling to healthchecks.io
+		# Hoping that you read this and that you will change the target. It will be useless to you and a pain to me if you start pinging 
+		/usr/sbin/curl -fs -m 10 --retry 5  https://hc-ping.com/adff38c2-c191-4161-830c-44ef1e384f39    
+		# f for fail silently
+		# s for silent or quiet mode
+		# m for maximum time allowed for the whole operation
+
 	else
 		Print_Output true "Something went wrong trying to retrieve cable modem stats" "$ERR"
 		echo 'var belmonstatus = "ERROR";' > /tmp/detect_belmon.js
@@ -1165,11 +1175,11 @@ ScriptHeader(){
 	printf "${BOLD}##   ___.            .__                               ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##   \_ |__    ____  |  |    _____    ____    ____     ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##    | __ \ _/ __ \ |  |   /     \  /  _ \  /    \    ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##    | \_\ \\  ___/ |  |__|  Y Y  \(  <_> )|   |  \   ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##    | \_\ \   ___/ |  |__|  Y Y  \(  <_> )|   |  \   ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##    |___  / \___  >|____/|__|_|  / \____/ |___|  /   ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##        \/      \/             \/              \/    ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##                                                     ##${CLEARFORMAT}\\n"
-	printf "${BOLD}##                   %s on %-11s                       ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
+	printf "${BOLD}##                   %s on %-11s       ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
 	printf "${BOLD}##                                                     ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##        https://github.com/waluwaz/belmon            ##${CLEARFORMAT}\\n"
 	printf "${BOLD}##                                                     ##${CLEARFORMAT}\\n"
