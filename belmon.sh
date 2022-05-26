@@ -444,7 +444,9 @@ Auto_Cron(){
 			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
 			
 			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
-				cru a "$SCRIPT_NAME" "46 * * * *  /jffs/scripts/$SCRIPT_NAME generate"
+				cru a "$SCRIPT_NAME" "1,16,31,46 * * * *  /jffs/scripts/$SCRIPT_NAME generate"
+				# cru a "$SCRIPT_NAME" "46 0,1,2,3,4,5,6,7,8,12,13,18,23 * * *  /jffs/scripts/$SCRIPT_NAME generate"
+				
 			fi
 		;;
 		delete)
@@ -726,7 +728,7 @@ WriteSql_ToFile(){
 }
 
 Get_Modem_Stats(){
-	/usr/sbin/curl -fs -m 10 --retry 5  https://hc-ping.com/adff38c2-c191-4161-830c-44ef1e384f39/start
+	/usr/sbin/curl -fs -m 10 --retry 5  https://hc-ping.com/adff38c2-c191-4161-830c-44ef1e384f39/start >/dev/null
 	if [ ! -f /opt/bin/xargs ]; then
 		Print_Output true "Installing findutils from Entware"
 		opkg update
@@ -768,6 +770,9 @@ Get_Modem_Stats(){
 
 #	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+#	metriclist="RxPwr RxSnr RxFreq RxUncor"   !!!!! The list with 4 metrics (instead of 7) only cuts 25% of the execution time.
+#   NB: The 25% time saving, might result in more, or less, than 25% saving on CPU cycles...
+
 
 # FYI: It appears that those very metric's name might be expected by other parts of modmon:
 # for instance: SELECT [Timestamp] FROM modstats_RxPwr
@@ -886,7 +891,7 @@ rm -f "$shstatsfile_ust"
 
 		# signaling to healthchecks.io
 		# Hoping that you read this and that you will change the target. It will be useless to you and a pain to me if you start pinging 
-		/usr/sbin/curl -fs -m 10 --retry 5  https://hc-ping.com/adff38c2-c191-4161-830c-44ef1e384f39    
+		/usr/sbin/curl -fs -m 10 --retry 5  https://hc-ping.com/adff38c2-c191-4161-830c-44ef1e384f39 >/dev/null
 		# f for fail silently
 		# s for silent or quiet mode
 		# m for maximum time allowed for the whole operation
@@ -894,6 +899,7 @@ rm -f "$shstatsfile_ust"
 	else
 		Print_Output true "Something went wrong trying to retrieve cable modem stats" "$ERR"
 		echo 'var belmonstatus = "ERROR";' > /tmp/detect_belmon.js
+		/usr/sbin/curl -fs -m 10 --retry 5  https://hc-ping.com/adff38c2-c191-4161-830c-44ef1e384f39/fail >/dev/null
 	fi
 	
 	rm -f "$shstatsfile"
@@ -911,6 +917,7 @@ Generate_CSVs(){
 	
 #	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+#	metriclist="RxPwr RxSnr RxFreq RxUncor"
 	
 	for metric in $metriclist; do
 	{
@@ -1011,6 +1018,7 @@ Generate_CSVs(){
 	
 #	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+#	metriclist="RxPwr RxSnr RxFreq RxUncor"
 	for metric in $metriclist; do
 	{
 		echo ".mode csv"
@@ -1101,6 +1109,7 @@ Reset_DB(){
 		
 #		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+		# the reset DB can be applied to the full list of metrics, not just the main ones. Reset_DB is a rare thing.
 		for metric in $metriclist; do
 			echo "DELETE FROM [modstats_$metric];" > /tmp/belmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-stats.sql
@@ -1117,7 +1126,8 @@ Process_Upgrade(){
 		Print_Output true "Creating database table indexes..." "$PASS"
 		
 #		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
-		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"		
+		metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+		# this can probably be applied to the full list of metrics, not just the main ones. It is probably a rare thing.		
 		for metric in $metriclist; do
 			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/belmon-upgrade.sql
 			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/belmon-upgrade.sql >/dev/null 2>&1; do
@@ -1390,7 +1400,8 @@ Menu_Install(){
 	Shortcut_Script create
 	
 #	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
-	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"	
+	metriclist="RxPwr RxSnr RxFreq RxOctets RxCorr RxUncor TxPwr"
+	# this can be applied to the full list of metrics, not just the main ones. It is a rare thing.
 	
 	for metric in $metriclist; do
 		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/belmon-stats.sql
