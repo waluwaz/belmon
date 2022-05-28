@@ -1,0 +1,126 @@
+
+select datetime(Timestamp , 'unixepoch', 'start of day') as day, count(*) 
+from modstats_RxPwr
+group by day
+order by day
+;
+
+
+
+
+/* Many duplicates, with 32 instead of 16 records */
+select count, count(*) FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxFreq
+)
+group by Timestamp
+order by Timestamp
+)
+group by count
+order by count
+;
+
+/* Duplicates between 15 and 18/03/2022 */
+select datetime(min(Timestamp), 'unixepoch'), datetime(max(Timestamp) , 'unixepoch') FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxFreq
+)
+group by Timestamp
+order by Timestamp
+)
+where not(count=16)
+;
+
+
+/* Many duplicates, with 32 instead of 16 records */
+select count, count(*) FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxCorr
+)
+group by Timestamp
+order by Timestamp
+)
+group by count
+order by count
+;
+
+/* Duplicates between 15 and 18/03/2022 */
+select datetime(min(Timestamp), 'unixepoch'), datetime(max(Timestamp) , 'unixepoch') FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxCorr
+)
+group by Timestamp
+order by Timestamp
+)
+where not(count=16)
+;
+
+
+
+/* no duplicates */
+select count, count(*) FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxOctets
+)
+group by Timestamp
+order by Timestamp
+)
+group by count
+order by count
+;
+
+/* no duplicates */
+select count, count(*) FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxPwr
+)
+group by Timestamp
+order by Timestamp
+)
+group by count
+order by count
+;
+
+/* no duplicates */
+select count, count(*) FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxSnr
+)
+group by Timestamp
+order by Timestamp
+)
+group by count
+order by count
+;
+
+/* duplicates */
+select count, count(*) FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxUncor
+)
+group by Timestamp
+order by Timestamp
+)
+group by count
+order by count
+;
+
+/* Duplicates between 15 and 18/03/2022 */
+select datetime(min(Timestamp), 'unixepoch'), datetime(max(Timestamp) , 'unixepoch') FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxUncor
+)
+group by Timestamp
+order by Timestamp
+)
+where not(count=16)
+;

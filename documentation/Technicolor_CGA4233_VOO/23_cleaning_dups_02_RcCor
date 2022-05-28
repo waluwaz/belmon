@@ -1,0 +1,97 @@
+/* There are some duplicates: for 1277 timestamps */
+select count, count(*) FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxCorr
+)
+group by Timestamp
+order by Timestamp
+)
+group by count
+order by count
+;
+
+/* Duplicates between 15 and 18/03/2022 */
+select datetime(min(Timestamp), 'unixepoch'), min(Timestamp), max(Timestamp), datetime(max(Timestamp) , 'unixepoch') FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxCorr
+)
+group by Timestamp
+order by Timestamp
+)
+where not (count=16)
+;
+
+/* Duplicates between 15 and 18/03/2022. The no duplicates come only afterwards */
+select datetime(min(Timestamp), 'unixepoch'), min(Timestamp), max(Timestamp), datetime(max(Timestamp) , 'unixepoch') FROM
+(select timestamp, count(*) as count
+from (
+select * from modstats_RxCorr
+)
+group by Timestamp
+order by Timestamp
+)
+where (count=16)
+;
+
+/* creating a table if need be to receive temp records */
+CREATE TABLE [temp] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL)
+
+/* The early days, with duplicates, have StatID ranging from 200.001 to 320.432 */
+select min(StatID), max(StatID) from modstats_RxCorr 
+where timestamp<=1647616321
+;
+
+/* Sample for one timestamp 16 records with ID 220.416 until 220.432; and 16 from 320417 until 320432 */
+select * from modstats_RxCorr 
+where timestamp=1647616321
+;
+
+/* 20432 records in that 200.000 range */
+select count(*) from modstats_RxCorr
+where StatID BETWEEN 200000 and 299999
+;
+
+/* 304 records before 200.000 statID */
+select count(*) from modstats_RxCorr
+where StatID BETWEEN 0 and 199999
+;
+
+/* not unexpectedly, 20432 from 300.000 until 320.432 */
+select count(*) from modstats_RxCorr
+where StatID BETWEEN 300000 and 320432
+;
+
+/* not only do they have the same number of records but also some identical key statistics */
+select sum(measurement), min(measurement), avg(measurement), max(measurement), 
+		sum(Timestamp), min(Timestamp), avg(Timestamp), max(Timestamp)  from modstats_RxCorr
+where StatID BETWEEN 200000 and 299999
+union all
+select sum(measurement), min(measurement), avg(measurement), max(measurement), 
+		sum(Timestamp), min(Timestamp), avg(Timestamp), max(Timestamp) from modstats_RxCorr
+where StatID BETWEEN 300000 and 320432
+;
+
+/* Unexpectedly, there are some somewhat old timestamps with a very early StatID */
+select min(StatID), max(StatID) from modstats_RxCorr 
+where timestamp>1647616321
+;
+
+/* Not very many, only 304 of them */
+select min(StatID), max(StatID) from modstats_RxCorr 
+where StatID < 200000 
+;
+
+/* They are from a slice of 18/03/2022 that has not been perfectly managed */
+select statid, datetime(timestamp,'unixepoch') from modstats_RxCorr 
+where StatID < 200000 
+;
+
+select min(StatID), max(StatID), count(*) from modstats_RxCorr 
+where StatID > 320432 
+;
+
+delete from modstats_RxCorr
+where StatID < 300000
+;
